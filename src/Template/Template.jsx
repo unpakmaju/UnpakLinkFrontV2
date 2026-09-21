@@ -8,6 +8,7 @@ import {
   ChevronRight,
   ChevronDown,
   Menu,
+  RefreshCw,
 } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/Providers/AuthProvider";
@@ -17,13 +18,34 @@ import { FaInstagram, FaFacebook, FaTiktok, FaYoutube } from "react-icons/fa";
 export default function Template() {
   const { isSidebarOpen, toggleSidebar, isCollapsed, toggleCollapse } =
     useSidebar();
-  const { logout } = useAuth();
+  const { logout, getNameInfo, getLevelInfo, getAvatarUrl } = useAuth();
   const navigate = useNavigate();
-  const { getNameInfo, getLevelInfo } = useAuth();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showMobileUser, setShowMobileUser] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
+  const [avatarTimestamp, setAvatarTimestamp] = useState(() => Date.now());
+  const [isRefreshingAvatar, setIsRefreshingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
+
+  const currentAvatarUrl = getAvatarUrl ? `${getAvatarUrl()}&t=${avatarTimestamp}` : "";
+
+  const handleRefreshAvatar = (e) => {
+    e.stopPropagation();
+    setIsRefreshingAvatar(true);
+    const freshUrl = getAvatarUrl ? getAvatarUrl(true) : "";
+    const img = new Image();
+    img.src = freshUrl;
+    img.onload = () => {
+      setAvatarTimestamp(Date.now());
+      setAvatarError(false);
+      setIsRefreshingAvatar(false);
+    };
+    img.onerror = () => {
+      setAvatarTimestamp(Date.now());
+      setIsRefreshingAvatar(false);
+    };
+  };
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -81,31 +103,72 @@ export default function Template() {
             <span className="text-sm font-semibold hidden sm:inline-block">
               {getNameInfo()}
             </span>
-            <div className="w-9 h-9 rounded-xl bg-cyan-400 text-[#49318f] flex items-center justify-center font-bold text-base shadow-sm shrink-0 border border-white/20">
-              {getNameInfo()?.[0]?.toUpperCase() ?? ""}
+            <div className="w-9 h-9 rounded-xl overflow-hidden bg-cyan-400 text-[#49318f] flex items-center justify-center font-bold text-base shadow-sm shrink-0 border border-white/20 relative">
+              {!avatarError && currentAvatarUrl ? (
+                <img
+                  src={currentAvatarUrl}
+                  alt={getNameInfo()}
+                  className="w-full h-full object-cover"
+                  onError={() => setAvatarError(true)}
+                />
+              ) : (
+                <span>{getNameInfo()?.[0]?.toUpperCase() ?? ""}</span>
+              )}
             </div>
             <ChevronDown size={14} className={`text-white/70 transition-transform duration-200 ${showDropdown ? "rotate-180" : ""}`} />
           </button>
 
           {showDropdown && (
-            <div className="absolute right-0 mt-2 w-48 bg-white text-gray-800 rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-1">
-              <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50">
-                <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Masuk sebagai</p>
-                <p className="text-sm font-bold text-gray-700 truncate">{getNameInfo()}</p>
-                <p className="text-[10px] text-[#49318f] font-semibold mt-0.5">{getLevelInfo()}</p>
+            <div className="absolute right-0 mt-2 w-64 bg-white text-gray-800 rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="p-4 border-b border-gray-100 bg-gradient-to-br from-slate-50 to-purple-50/40">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl overflow-hidden bg-cyan-400 text-[#49318f] flex items-center justify-center font-bold text-lg shadow-sm shrink-0 border border-gray-200/80 relative">
+                    {!avatarError && currentAvatarUrl ? (
+                      <img
+                        src={currentAvatarUrl}
+                        alt={getNameInfo()}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span>{getNameInfo()?.[0]?.toUpperCase() ?? ""}</span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Masuk sebagai</p>
+                    <p className="text-sm font-extrabold text-gray-800 truncate" title={getNameInfo()}>{getNameInfo()}</p>
+                    <span className="inline-block text-[10px] font-bold text-[#573c9d] bg-[#573c9d]/10 px-2 py-0.5 rounded-md mt-0.5">
+                      {getLevelInfo()}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Segarkan Foto SSO Button */}
+                <button
+                  type="button"
+                  onClick={handleRefreshAvatar}
+                  disabled={isRefreshingAvatar}
+                  className="mt-3 w-full py-1.5 px-2.5 rounded-lg text-xs font-semibold text-slate-600 bg-white hover:bg-slate-100 border border-slate-200/80 flex items-center justify-center gap-1.5 transition shadow-2xs hover:text-[#573c9d] cursor-pointer"
+                  title="Tarik foto profil Google SSO terbaru"
+                >
+                  <RefreshCw size={12} className={isRefreshingAvatar ? "animate-spin text-[#573c9d]" : ""} />
+                  <span>{isRefreshingAvatar ? "Menyinkronkan..." : "Segarkan Foto Akun"}</span>
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowDropdown(false);
-                  setShowLogoutModal(true);
-                }}
-                className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 font-semibold transition"
-                title="Keluar"
-              >
-                <LogOut size={16} />
-                Keluar / Logout
-              </button>
+
+              <div className="p-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDropdown(false);
+                    setShowLogoutModal(true);
+                  }}
+                  className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50/80 rounded-xl flex items-center gap-2.5 font-semibold transition cursor-pointer"
+                  title="Keluar"
+                >
+                  <LogOut size={16} />
+                  Keluar / Logout
+                </button>
+              </div>
             </div>
           )}
         </div>

@@ -92,6 +92,35 @@ export function AuthProvider({ children }) {
     return info?.Level;
   };
 
+  const getEmailInfo = () => {
+    const info2 = getDecodedToken(localStorage.getItem("idToken"));
+    return info2?.email ?? "";
+  };
+
+  const getUsernameInfo = () => {
+    const info2 = getDecodedToken(localStorage.getItem("idToken"));
+    return info2?.preferred_username ?? info2?.employeeid ?? "";
+  };
+
+  const getAvatarUrl = (refresh = false) => {
+    const email = getEmailInfo();
+    const username = getUsernameInfo();
+    const name = getNameInfo();
+
+    const params = new URLSearchParams();
+    if (email) params.append("email", email);
+    if (username) params.append("username", username);
+    if (name) params.append("name", name);
+    if (refresh) {
+      params.append("refresh", "1");
+      params.append("t", Date.now().toString());
+    }
+
+    const base = BASEAPI || "https://unpak.link/api";
+    return `${base}/avatar?${params.toString()}`;
+  };
+
+
   /* ======================
    * USER INFO
    * ====================== */
@@ -171,6 +200,9 @@ export function AuthProvider({ children }) {
         fetchUserInfo,
         getNameInfo,
         getLevelInfo,
+        getEmailInfo,
+        getUsernameInfo,
+        getAvatarUrl,
         logout,
         userLoading,
         userError,
