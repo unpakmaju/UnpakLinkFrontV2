@@ -8,59 +8,24 @@ import { useKeycloak } from "@react-keycloak/web";
 import { useAuth } from "@/Providers/AuthProvider";
 
 export default function Landing() {
-  const { keycloak, initialized } = useKeycloak();
+  const { keycloak } = useKeycloak();
   const { isSessionExpired } = useAuth();
   const navigate = useNavigate();
-  const [initTimeout, setInitTimeout] = useState(false);
 
-  // Check if session is already active
-  const hasLocalSession =
-    !isSessionExpired() && Boolean(localStorage.getItem("token"));
+  // Cek apakah browser ini sudah memiliki sesi login aktif (token tersimpan dan valid)
+  const token = localStorage.getItem("token");
+  const hasLocalSession = Boolean(token) && !isSessionExpired();
   const isSsoAuthenticated = Boolean(keycloak?.authenticated);
-
-  // Safety fallback timer: max 2.5 seconds waiting for silent SSO check
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setInitTimeout(true);
-    }, 2500);
-    return () => clearTimeout(timer);
-  }, []);
 
   useEffect(() => {
     if (hasLocalSession || isSsoAuthenticated) {
-      if (keycloak?.token) {
-        localStorage.setItem("token", keycloak.token || "");
-      }
-      if (keycloak?.idToken) {
-        localStorage.setItem("idToken", keycloak.idToken || "");
-      }
-      if (keycloak?.refreshToken) {
-        localStorage.setItem("refresh", keycloak.refreshToken || "");
-      }
       navigate("/dashboard", { replace: true });
     }
-  }, [
-    hasLocalSession,
-    isSsoAuthenticated,
-    keycloak?.token,
-    keycloak?.idToken,
-    keycloak?.refreshToken,
-    navigate,
-  ]);
+  }, [hasLocalSession, isSsoAuthenticated, navigate]);
 
-  // While checking SSO (silent check) or actively redirecting, hide the landing page
-  if ((!initialized && !initTimeout) || hasLocalSession || isSsoAuthenticated) {
-    return (
-      <div className="min-h-screen bg-[#6c53b4] flex items-center justify-center font-montserrat">
-        <div className="flex flex-col items-center gap-4 text-white">
-          <img src={Logo} alt="logo" className="w-14 h-14 animate-pulse" />
-          <div className="animate-spin rounded-full h-8 w-8 border-4 border-cyan-400 border-t-transparent"></div>
-          <p className="text-sm font-medium tracking-wide text-white/80">
-            Memeriksa sesi login...
-          </p>
-        </div>
-      </div>
-    );
+  // Jika sudah terotentikasi, jangan tampilkan halaman home sama sekali
+  if (hasLocalSession || isSsoAuthenticated) {
+    return null;
   }
 
   return (

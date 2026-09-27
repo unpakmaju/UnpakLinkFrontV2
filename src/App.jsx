@@ -18,16 +18,26 @@ import { AuthProvider } from "./Providers/AuthProvider";
 import { SidebarProvider } from "./Providers/SidebarProvider";
 
 export default function App() {
+  const savedToken = localStorage.getItem("token");
+  const savedRefresh = localStorage.getItem("refresh");
+  const savedIdToken = localStorage.getItem("idToken");
+
+  const initOptions = {
+    checkLoginIframe: false,
+    pkceMethod: "S256",
+    ...(savedToken && savedRefresh
+      ? {
+          token: savedToken,
+          refreshToken: savedRefresh,
+          idToken: savedIdToken || undefined,
+        }
+      : {}),
+  };
+
   return (
     <ReactKeycloakProvider
       authClient={keycloak}
-      initOptions={{
-        onLoad: "check-sso",
-        silentCheckSsoRedirectUri:
-          window.location.origin + "/silent-check-sso.html",
-        checkLoginIframe: false,
-        pkceMethod: "S256",
-      }}
+      initOptions={initOptions}
       onTokens={(tokens) => {
         if (tokens?.token) {
           localStorage.setItem("token", tokens.token);
