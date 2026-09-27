@@ -32,3 +32,6 @@ dist-ssr
 
 # Persistent Agent Customizations (Security Credentials)
 .agents/
+AGENTS.md
+*.agent.md
+*.agents.md

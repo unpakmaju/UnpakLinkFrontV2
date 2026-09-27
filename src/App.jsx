@@ -23,17 +23,22 @@ export default function App() {
       authClient={keycloak}
       initOptions={{
         onLoad: "check-sso",
+        silentCheckSsoRedirectUri:
+          window.location.origin + "/silent-check-sso.html",
         checkLoginIframe: false,
         pkceMethod: "S256",
       }}
-      // onTokens={(tokens) => {
-      //   if (tokens?.token) {
-      //     localStorage.setItem("token", tokens.token);
-      //   }
-      //   if (tokens?.refreshToken) {
-      //     localStorage.setItem("refresh", tokens.refreshToken);
-      //   }
-      // }}
+      onTokens={(tokens) => {
+        if (tokens?.token) {
+          localStorage.setItem("token", tokens.token);
+        }
+        if (tokens?.idToken) {
+          localStorage.setItem("idToken", tokens.idToken);
+        }
+        if (tokens?.refreshToken) {
+          localStorage.setItem("refresh", tokens.refreshToken);
+        }
+      }}
     >
       <SidebarProvider>
         <AuthProvider>
