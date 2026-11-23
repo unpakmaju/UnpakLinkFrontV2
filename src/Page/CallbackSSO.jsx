@@ -7,6 +7,7 @@ export default function CallbackSSO() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    document.title = "Memproses Login SSO — UnpakLink";
     if (keycloak?.idToken) {
       localStorage.setItem("token", keycloak.token || "");
       localStorage.setItem("idToken", keycloak.idToken || "");

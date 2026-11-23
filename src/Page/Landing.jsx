@@ -18,6 +18,10 @@ export default function Landing() {
   const isSsoAuthenticated = Boolean(keycloak?.authenticated);
 
   useEffect(() => {
+    document.title = "UnpakLink — Pemendek Tautan Resmi Universitas Pakuan";
+  }, []);
+
+  useEffect(() => {
     if (hasLocalSession || isSsoAuthenticated) {
       navigate("/dashboard", { replace: true });
     }

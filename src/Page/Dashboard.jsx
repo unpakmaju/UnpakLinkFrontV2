@@ -176,6 +176,10 @@ export default function Dashboard() {
   // CLOSE DATE PICKER WHEN CLICK OUTSIDE
   // =======================
   useEffect(() => {
+    document.title = "Dashboard Analitik — UnpakLink";
+  }, []);
+
+  useEffect(() => {
     function handleClickOutside(e) {
       if (dateRef.current && !dateRef.current.contains(e.target)) {
         setShowDatePicker(false);

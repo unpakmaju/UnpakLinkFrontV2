@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/Providers/ToastProvider";
 import { useAuth } from "@/Providers/AuthProvider";
 import { isSafeHttpUrl } from "@/Common/Utils";
 import Logo from "@/assets/logo.svg";
+import Img1 from "@/assets/img-1.svg";
+import Img2 from "@/assets/img-2.svg";
 
 const BASEAPI = import.meta.env.VITE_BASEAPI;
 
 export default function SmartLink() {
   const { shorturl } = useParams();
+  const navigate = useNavigate();
   const { addToast } = useToast();
   const { getValidToken } = useAuth();
 
@@ -37,6 +40,9 @@ export default function SmartLink() {
   const [showPassword, setShowPassword] = useState(false);
   const [code, setCode] = useState("");
   const [unlocking, setUnlocking] = useState(false);
+
+  // 5-second auto redirect state for 404 page
+  const [redirectCountdown, setRedirectCountdown] = useState(5);
 
   // ================= LOAD DATA ======================
   async function loadData() {
@@ -128,6 +134,54 @@ export default function SmartLink() {
   useEffect(() => {
     loadData();
   }, [shorturl]);
+
+  // ================= DYNAMIC BROWSER TAB TITLE ======================
+  useEffect(() => {
+    const slugLabel = shorturl ? `unpak.link/${shorturl}` : "unpak.link";
+    if (loading) {
+      document.title = `Memuat ${slugLabel}... — UnpakLink`;
+      return;
+    }
+    if (mode === "notfound") {
+      document.title = `404 Tautan Tidak Ditemukan (${slugLabel}) — UnpakLink`;
+      return;
+    }
+    if (
+      mode === "protect" ||
+      (mode === "count" && status === "active" && password)
+    ) {
+      document.title = `Tautan Terproteksi (${slugLabel}) — UnpakLink`;
+      return;
+    }
+    if (mode === "count" && status === "expired") {
+      document.title = `Tautan Kedaluwarsa (${slugLabel}) — UnpakLink`;
+      return;
+    }
+    if (mode === "count" && status === "waiting") {
+      document.title = `Menunggu Waktu Akses (${slugLabel}) — UnpakLink`;
+      return;
+    }
+    document.title = `Mengalihkan ${slugLabel}... — UnpakLink`;
+  }, [loading, mode, status, password, shorturl]);
+
+  // ================= 5-SECOND AUTO REDIRECT ON 404 ======================
+  useEffect(() => {
+    if (loading || mode !== "notfound") return;
+
+    setRedirectCountdown(5);
+    const interval = setInterval(() => {
+      setRedirectCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          navigate("/", { replace: true });
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [loading, mode, navigate]);
 
   // ================= STATUS HELPER ======================
   const getStatus = () => {
@@ -282,10 +336,10 @@ export default function SmartLink() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#362175] via-[#49318f] to-[#6c53b4] flex flex-col items-center justify-center p-6 font-montserrat text-white">
-        <div className="w-12 h-12 border-4 border-white/20 border-t-[#ffc107] rounded-full animate-spin mb-4"></div>
-        <p className="text-sm font-semibold tracking-wide text-purple-100">
-          Memeriksa tautan unpak.link/{shorturl}...
+      <div className="min-h-screen bg-[#6c53b4] flex flex-col items-center justify-center p-6 font-montserrat text-white">
+        <div className="w-11 h-11 border-4 border-white/25 border-t-cyan-400 rounded-full animate-spin mb-4"></div>
+        <p className="text-sm font-medium text-white/90">
+          Memuat unpak.link/{shorturl}...
         </p>
       </div>
     );
@@ -294,9 +348,9 @@ export default function SmartLink() {
   if (mode === "default" || (mode === "count" && status === "active")) {
     if (!password) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-[#362175] via-[#49318f] to-[#6c53b4] flex flex-col items-center justify-center p-6 font-montserrat text-white">
-          <div className="w-12 h-12 border-4 border-white/20 border-t-[#ffc107] rounded-full animate-spin mb-4"></div>
-          <p className="text-sm font-semibold tracking-wide text-purple-100">
+        <div className="min-h-screen bg-[#6c53b4] flex flex-col items-center justify-center p-6 font-montserrat text-white">
+          <div className="w-11 h-11 border-4 border-white/25 border-t-cyan-400 rounded-full animate-spin mb-4"></div>
+          <p className="text-sm font-medium text-white/90">
             Mengalihkan ke halaman tujuan...
           </p>
         </div>
@@ -304,86 +358,99 @@ export default function SmartLink() {
     }
   }
 
-  // ================= 1. NOT FOUND (404) ======================
+  // ================= 1. NOT FOUND (404) — UNPAK SPLIT HERO CANVAS ======================
   if (mode === "notfound") {
+    const progressPct = ((5 - redirectCountdown) / 5) * 100;
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#362175] via-[#49318f] to-[#6c53b4] flex flex-col items-center justify-center px-4 py-10 font-montserrat">
-        <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-white/20">
-          {/* Top Purple Banner */}
-          <div className="bg-[#49318f] px-8 py-6 flex items-center justify-between border-b border-white/10">
-            <div className="flex items-center gap-3">
-              <img
-                src={Logo}
-                alt="Logo UNPAK"
-                className="w-10 h-10 object-contain bg-white/10 p-1.5 rounded-xl border border-white/15"
-              />
-              <div>
-                <span className="text-white font-extrabold text-lg tracking-wide block leading-none">
-                  unpak.link
-                </span>
-                <span className="text-purple-200 text-[11px] font-medium">
+      <div className="min-h-screen bg-[#6c53b4] flex items-center py-10 sm:py-16 font-montserrat">
+        <div className="w-full max-w-6xl mx-auto px-6 sm:px-10 lg:px-14">
+          <div className="bg-[#49318f] rounded-3xl px-6 sm:px-12 lg:px-16 py-10 sm:py-14 text-white shadow-2xl">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+              {/* LEFT COLUMN: TYPOGRAPHY & 5S COUNTDOWN */}
+              <div className="lg:col-span-7 text-center lg:text-left space-y-6">
+                <div className="inline-flex items-center gap-3">
+                  <img
+                    src={Logo}
+                    alt="Logo UNPAK"
+                    className="w-14 sm:w-16 mx-auto lg:mx-0"
+                  />
+                  <div className="text-left">
+                    <span className="block text-xs uppercase tracking-widest text-[#ffc107] font-bold">
+                      Unpak Shorter Link
+                    </span>
+                    <span className="block text-sm text-white/80 font-light">
+                      Sivitas Akademika Universitas Pakuan
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="text-6xl sm:text-7xl lg:text-8xl font-extrabold leading-none tracking-tight text-cyan-400">
+                    404
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight">
+                    Tautan Tidak Ditemukan
+                  </h1>
+                  <p className="text-sm sm:text-base font-light text-white/85 leading-relaxed max-w-xl mx-auto lg:mx-0">
+                    Alamat pendek{" "}
+                    <span className="font-semibold text-[#ffc107] underline decoration-[#ffc107]/50 underline-offset-4 break-all">
+                      unpak.link/{shorturl ?? "---"}
+                    </span>{" "}
+                    belum terdaftar, telah dihapus, atau sedang dinonaktifkan
+                    oleh pemilik tautan.
+                  </p>
+                </div>
+
+                {/* 5-SECOND AUTO REDIRECT BAR */}
+                <div className="bg-white/10 border border-white/15 rounded-2xl p-4 max-w-md mx-auto lg:mx-0 space-y-2.5">
+                  <div className="flex items-center justify-between text-xs sm:text-sm">
+                    <span className="text-white/85 font-light">
+                      Otomatis kembali ke halaman utama dalam:
+                    </span>
+                    <span className="font-extrabold text-cyan-400 text-base">
+                      {redirectCountdown} detik
+                    </span>
+                  </div>
+                  <div className="w-full h-1.5 bg-white/15 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-cyan-400 rounded-full transition-all duration-1000 ease-linear"
+                      style={{ width: `${progressPct}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                <div className="pt-1">
+                  <Link
+                    to="/"
+                    replace
+                    className="inline-block bg-cyan-400 text-[#49318f] px-8 py-3.5 rounded-full font-bold text-sm hover:bg-cyan-300 transition-all duration-300 shadow-lg"
+                  >
+                    Ke Halaman Utama Sekarang
+                  </Link>
+                </div>
+              </div>
+
+              {/* RIGHT COLUMN: ILLUSTRATION */}
+              <div className="lg:col-span-5 flex justify-center lg:justify-end">
+                <img
+                  src={Img1}
+                  alt="Ilustrasi UnpakLink"
+                  className="w-60 sm:w-76 lg:w-full max-w-sm drop-shadow-xl"
+                />
+              </div>
+
+              {/* BOTTOM BAR */}
+              <div className="col-span-1 lg:col-span-12 pt-6 border-t border-white/15 mt-2 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-white/70">
+                <span>
+                  © unpak.link — Bagian Perencanaan & Sistem Informasi (BPSI)
                   Universitas Pakuan
                 </span>
+                <span className="font-semibold text-white/90">
+                  unpak.link/{shorturl ?? "---"}
+                </span>
               </div>
             </div>
-            <span className="px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-[#ffc107] text-[#362175]">
-              Error 404
-            </span>
-          </div>
-
-          {/* Main Content */}
-          <div className="p-8 sm:p-10 text-center space-y-6">
-            <div>
-              <div className="text-7xl sm:text-8xl font-black text-[#49318f] tracking-tight leading-none select-none">
-                404
-              </div>
-              <div className="w-16 h-1.5 bg-[#ffc107] mx-auto rounded-full mt-4"></div>
-            </div>
-
-            <div className="space-y-2">
-              <h1 className="text-xl sm:text-2xl font-extrabold text-gray-800">
-                Tautan Tidak Tersedia
-              </h1>
-              <p className="text-sm text-gray-500 leading-relaxed">
-                Tautan pendek yang Anda tuju tidak ditemukan, telah dihapus,
-                atau sedang dinonaktifkan. Pastikan penulisan huruf besar dan
-                kecil pada alamat tautan sudah sesuai.
-              </p>
-            </div>
-
-            {/* Requested Short URL Pill */}
-            <div className="bg-[#49318f]/5 border border-[#49318f]/15 rounded-2xl px-4 py-3.5">
-              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                Alamat Tautan yang Diakses
-              </p>
-              <p className="text-base sm:text-lg font-extrabold text-[#49318f] break-all">
-                unpak.link/{shorturl ?? "---"}
-              </p>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Link
-                to="/"
-                className="flex-1 bg-[#49318f] hover:bg-[#382278] text-white font-bold text-sm py-3.5 px-6 rounded-xl transition shadow-md text-center"
-              >
-                Kembali ke Beranda
-              </Link>
-              <a
-                href="https://www.unpak.ac.id"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 border border-gray-200 hover:border-[#49318f]/40 hover:bg-gray-50 text-gray-700 font-bold text-sm py-3.5 px-6 rounded-xl transition text-center"
-              >
-                Portal UNPAK
-              </a>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="bg-gray-50 px-8 py-4 border-t border-gray-100 text-center text-xs text-gray-400 font-medium">
-            © unpak.link — Bagian Perencanaan & Sistem Informasi (BPSI)
-            Universitas Pakuan
           </div>
         </div>
       </div>
@@ -396,183 +463,183 @@ export default function SmartLink() {
     (mode === "count" && status === "active" && password)
   ) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#362175] via-[#49318f] to-[#6c53b4] flex flex-col items-center justify-center px-4 py-10 font-montserrat">
-        <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-white/20">
-          {/* Header */}
-          <div className="bg-[#49318f] px-8 py-6 flex items-center justify-between border-b border-white/10">
-            <div className="flex items-center gap-3">
-              <img
-                src={Logo}
-                alt="Logo UNPAK"
-                className="w-10 h-10 object-contain bg-white/10 p-1.5 rounded-xl border border-white/15"
-              />
-              <div>
-                <span className="text-white font-extrabold text-lg tracking-wide block leading-none">
-                  unpak.link
-                </span>
-                <span className="text-purple-200 text-[11px] font-medium">
+      <div className="min-h-screen bg-[#6c53b4] flex items-center py-10 sm:py-16 font-montserrat">
+        <div className="w-full max-w-5xl mx-auto px-6 sm:px-10">
+          <div className="bg-[#49318f] rounded-3xl px-6 sm:px-12 lg:px-16 py-10 sm:py-14 text-white shadow-2xl">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+              {/* LEFT: FORM UNLOCK */}
+              <div className="lg:col-span-7 space-y-6">
+                <div className="inline-flex items-center gap-3">
+                  <img src={Logo} alt="Logo UNPAK" className="w-14" />
+                  <div>
+                    <span className="block text-xs uppercase tracking-widest text-[#ffc107] font-bold">
+                      Tautan Terproteksi
+                    </span>
+                    <span className="block text-sm text-white/80 font-light">
+                      unpak.link/{shorturl ?? "---"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h1 className="text-2xl sm:text-3xl font-bold leading-tight">
+                    Masukkan Kode Rahasia
+                  </h1>
+                  <p className="text-sm text-white/80 font-light leading-relaxed">
+                    Pemilik tautan membatasi akses halaman ini dengan kata
+                    sandi. Silakan masukkan kode rahasia untuk melanjutkan.
+                  </p>
+                </div>
+
+                <form
+                  onSubmit={unlockHandler}
+                  className="space-y-4 max-w-md pt-1"
+                >
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      placeholder="Ketik kode rahasia di sini..."
+                      autoFocus
+                      className="w-full bg-white text-gray-800 rounded-2xl px-5 py-3.5 pr-12 text-sm font-medium focus:outline-none focus:ring-4 focus:ring-cyan-400/40 shadow-inner"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-4 flex items-center text-gray-400 hover:text-[#49318f] transition cursor-pointer"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      type="submit"
+                      disabled={unlocking}
+                      className="bg-cyan-400 text-[#49318f] px-8 py-3.5 rounded-full font-bold text-sm hover:bg-cyan-300 disabled:opacity-50 transition-all duration-300 shadow-lg cursor-pointer"
+                    >
+                      {unlocking ? "Memverifikasi..." : "Lanjutkan ke Tautan"}
+                    </button>
+                    <Link
+                      to="/"
+                      className="text-xs sm:text-sm text-white/75 hover:text-white underline underline-offset-4 px-3 py-2"
+                    >
+                      Kembali ke Beranda
+                    </Link>
+                  </div>
+                </form>
+              </div>
+
+              {/* RIGHT: ILLUSTRATION */}
+              <div className="lg:col-span-5 flex justify-center lg:justify-end">
+                <img
+                  src={Img2}
+                  alt="Ilustrasi Tautan Terproteksi"
+                  className="w-56 sm:w-72 lg:w-full max-w-xs drop-shadow-xl"
+                />
+              </div>
+
+              <div className="col-span-1 lg:col-span-12 pt-6 border-t border-white/15 mt-2 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-white/70">
+                <span>
+                  © unpak.link — Bagian Perencanaan & Sistem Informasi (BPSI)
                   Universitas Pakuan
                 </span>
+                <span className="font-semibold text-white/90">
+                  unpak.link/{shorturl ?? "---"}
+                </span>
               </div>
             </div>
-            <span className="px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-[#ffc107] text-[#362175]">
-              Terproteksi
-            </span>
-          </div>
-
-          <form onSubmit={unlockHandler} className="p-8 space-y-6">
-            <div className="text-center space-y-2">
-              <h1 className="text-xl font-extrabold text-gray-800">
-                Tautan Dilindungi Kata Sandi
-              </h1>
-              <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
-                Masukkan kode rahasia untuk membuka dan melanjutkan ke halaman
-                tujuan.
-              </p>
-            </div>
-
-            <div className="bg-[#49318f]/5 border border-[#49318f]/15 rounded-2xl px-4 py-3 text-center">
-              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
-                Tujuan Tautan
-              </p>
-              <p className="text-base font-extrabold text-[#49318f] break-all">
-                unpak.link/{shorturl ?? "---"}
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                Kode Rahasia / Kata Sandi
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  placeholder="Masukkan kata sandi..."
-                  autoFocus
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3.5 pr-11 focus:outline-none focus:ring-2 focus:ring-[#49318f]/20 focus:border-[#49318f] text-sm font-medium text-gray-800 transition"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-3.5 flex items-center text-gray-400 hover:text-[#49318f] transition cursor-pointer"
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-4 h-4" />
-                  ) : (
-                    <Eye className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={unlocking}
-              className="w-full bg-[#49318f] hover:bg-[#382278] disabled:bg-gray-300 text-white font-bold text-sm py-3.5 rounded-xl transition shadow-md cursor-pointer"
-            >
-              {unlocking ? "Memverifikasi..." : "Buka Tautan"}
-            </button>
-          </form>
-
-          <div className="bg-gray-50 px-8 py-4 border-t border-gray-100 text-center text-xs text-gray-400 font-medium">
-            © unpak.link — BPSI Universitas Pakuan
           </div>
         </div>
       </div>
     );
   }
 
-  // ================= 3. EXPIRED LINK ======================
+  // ================= 3. EXPIRED LINK — UNPAK SPLIT HERO CANVAS ======================
   if (isExpired) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#362175] via-[#49318f] to-[#6c53b4] flex flex-col items-center justify-center px-4 py-10 font-montserrat">
-        <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-white/20">
-          {/* Top Purple Banner */}
-          <div className="bg-[#49318f] px-8 py-6 flex items-center justify-between border-b border-white/10">
-            <div className="flex items-center gap-3">
-              <img
-                src={Logo}
-                alt="Logo UNPAK"
-                className="w-10 h-10 object-contain bg-white/10 p-1.5 rounded-xl border border-white/15"
-              />
-              <div>
-                <span className="text-white font-extrabold text-lg tracking-wide block leading-none">
-                  unpak.link
-                </span>
-                <span className="text-purple-200 text-[11px] font-medium">
+      <div className="min-h-screen bg-[#6c53b4] flex items-center py-10 sm:py-16 font-montserrat">
+        <div className="w-full max-w-6xl mx-auto px-6 sm:px-10 lg:px-14">
+          <div className="bg-[#49318f] rounded-3xl px-6 sm:px-12 lg:px-16 py-10 sm:py-14 text-white shadow-2xl">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+              {/* LEFT COLUMN */}
+              <div className="lg:col-span-7 text-center lg:text-left space-y-6">
+                <div className="inline-flex items-center gap-3">
+                  <img
+                    src={Logo}
+                    alt="Logo UNPAK"
+                    className="w-14 sm:w-16 mx-auto lg:mx-0"
+                  />
+                  <div className="text-left">
+                    <span className="block text-xs uppercase tracking-widest text-[#ffc107] font-bold">
+                      Masa Aktif Berakhir
+                    </span>
+                    <span className="block text-sm text-white/80 font-light">
+                      Sivitas Akademika Universitas Pakuan
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight">
+                    Tautan Sudah Kedaluwarsa
+                  </h1>
+                  <p className="text-sm sm:text-base font-light text-white/85 leading-relaxed max-w-xl mx-auto lg:mx-0">
+                    Batas waktu kunjungan untuk tautan{" "}
+                    <span className="font-semibold text-[#ffc107] break-all">
+                      unpak.link/{shorturl ?? "---"}
+                    </span>{" "}
+                    telah berakhir. Silakan hubungi pembuat tautan atau
+                    penyelenggara kegiatan jika Anda masih memerlukan akses.
+                  </p>
+                </div>
+
+                {endDate && (
+                  <div className="bg-white/10 border border-white/15 rounded-2xl px-5 py-4 max-w-md mx-auto lg:mx-0 text-left space-y-1">
+                    <span className="block text-[11px] uppercase tracking-wider text-white/65 font-semibold">
+                      Jadwal Masa Aktif Berakhir Pada
+                    </span>
+                    <span className="block text-sm sm:text-base font-bold text-[#ffc107]">
+                      {formatDateIndo(endDate)} WIB
+                    </span>
+                  </div>
+                )}
+
+                <div className="pt-1">
+                  <Link
+                    to="/"
+                    className="inline-block bg-cyan-400 text-[#49318f] px-8 py-3.5 rounded-full font-bold text-sm hover:bg-cyan-300 transition-all duration-300 shadow-lg"
+                  >
+                    Kembali ke Halaman Utama
+                  </Link>
+                </div>
+              </div>
+
+              {/* RIGHT COLUMN */}
+              <div className="lg:col-span-5 flex justify-center lg:justify-end">
+                <img
+                  src={Img2}
+                  alt="Ilustrasi UnpakLink"
+                  className="w-60 sm:w-76 lg:w-full max-w-sm drop-shadow-xl"
+                />
+              </div>
+
+              {/* FOOTER */}
+              <div className="col-span-1 lg:col-span-12 pt-6 border-t border-white/15 mt-2 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-white/70">
+                <span>
+                  © unpak.link — Bagian Perencanaan & Sistem Informasi (BPSI)
                   Universitas Pakuan
                 </span>
-              </div>
-            </div>
-            <span className="px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-rose-500 text-white">
-              Kedaluwarsa
-            </span>
-          </div>
-
-          {/* Main Content */}
-          <div className="p-8 sm:p-10 text-center space-y-6">
-            <div>
-              <span className="inline-block px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-wider bg-rose-50 text-rose-600 border border-rose-200">
-                Masa Aktif Tautan Telah Berakhir
-              </span>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-800 mt-4">
-                Tautan Sudah Kedaluwarsa
-              </h1>
-              <div className="w-16 h-1.5 bg-[#ffc107] mx-auto rounded-full mt-3"></div>
-            </div>
-
-            <p className="text-sm text-gray-500 leading-relaxed">
-              Batas waktu akses untuk tautan pendek ini telah berakhir. Silakan
-              hubungi pembuat tautan atau penyelenggara kegiatan apabila Anda
-              masih memerlukan akses ke halaman ini.
-            </p>
-
-            {/* Shortlink & Schedule Details */}
-            <div className="bg-[#49318f]/5 border border-[#49318f]/15 rounded-2xl p-4 space-y-2.5 text-left">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-[#49318f]/10 pb-2.5">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                  Tautan Pendek
-                </span>
-                <span className="text-sm sm:text-base font-extrabold text-[#49318f] break-all">
+                <span className="font-semibold text-white/90">
                   unpak.link/{shorturl ?? "---"}
                 </span>
               </div>
-              {endDate && (
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    Berakhir Pada
-                  </span>
-                  <span className="text-xs sm:text-sm font-bold text-rose-600">
-                    {formatDateIndo(endDate)} WIB
-                  </span>
-                </div>
-              )}
             </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Link
-                to="/"
-                className="flex-1 bg-[#49318f] hover:bg-[#382278] text-white font-bold text-sm py-3.5 px-6 rounded-xl transition shadow-md text-center"
-              >
-                Kembali ke Beranda
-              </Link>
-              <a
-                href="https://www.unpak.ac.id"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 border border-gray-200 hover:border-[#49318f]/40 hover:bg-gray-50 text-gray-700 font-bold text-sm py-3.5 px-6 rounded-xl transition text-center"
-              >
-                Portal UNPAK
-              </a>
-            </div>
-          </div>
-
-          <div className="bg-gray-50 px-8 py-4 border-t border-gray-100 text-center text-xs text-gray-400 font-medium">
-            © unpak.link — Bagian Perencanaan & Sistem Informasi (BPSI)
-            Universitas Pakuan
           </div>
         </div>
       </div>
@@ -581,101 +648,97 @@ export default function SmartLink() {
 
   // ================= 4. WAITING / COUNTDOWN ======================
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#362175] via-[#49318f] to-[#6c53b4] flex flex-col items-center justify-center px-4 py-10 font-montserrat">
-      <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-white/20">
-        {/* Top Purple Banner */}
-        <div className="bg-[#49318f] px-8 py-6 flex items-center justify-between border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <img
-              src={Logo}
-              alt="Logo UNPAK"
-              className="w-10 h-10 object-contain bg-white/10 p-1.5 rounded-xl border border-white/15"
-            />
-            <div>
-              <span className="text-white font-extrabold text-lg tracking-wide block leading-none">
-                unpak.link
-              </span>
-              <span className="text-purple-200 text-[11px] font-medium">
+    <div className="min-h-screen bg-[#6c53b4] flex items-center py-10 sm:py-16 font-montserrat">
+      <div className="w-full max-w-6xl mx-auto px-6 sm:px-10 lg:px-14">
+        <div className="bg-[#49318f] rounded-3xl px-6 sm:px-12 lg:px-16 py-10 sm:py-14 text-white shadow-2xl">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            <div className="lg:col-span-7 text-center lg:text-left space-y-6">
+              <div className="inline-flex items-center gap-3">
+                <img
+                  src={Logo}
+                  alt="Logo UNPAK"
+                  className="w-14 sm:w-16 mx-auto lg:mx-0"
+                />
+                <div className="text-left">
+                  <span className="block text-xs uppercase tracking-widest text-[#ffc107] font-bold">
+                    Tautan Terjadwal
+                  </span>
+                  <span className="block text-sm text-white/80 font-light">
+                    unpak.link/{shorturl ?? "---"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h1 className="text-3xl sm:text-4xl font-bold leading-tight">
+                  Tautan Belum Dibuka
+                </h1>
+                <p className="text-sm sm:text-base font-light text-white/85 leading-relaxed max-w-xl mx-auto lg:mx-0">
+                  Tautan ini akan aktif secara otomatis saat hitung mundur di
+                  bawah selesai. Anda tidak perlu memuat ulang halaman ini.
+                </p>
+              </div>
+
+              {timeLeft && (
+                <div className="grid grid-cols-4 gap-3 max-w-md mx-auto lg:mx-0">
+                  {[
+                    { label: "Hari", value: format(timeLeft.days) },
+                    { label: "Jam", value: format(timeLeft.hours) },
+                    { label: "Menit", value: format(timeLeft.minutes) },
+                    { label: "Detik", value: format(timeLeft.seconds) },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      className="bg-white/10 border border-white/20 rounded-2xl py-3.5 px-2 text-center"
+                    >
+                      <div className="text-2xl sm:text-3xl font-extrabold text-cyan-400">
+                        {item.value}
+                      </div>
+                      <div className="text-[11px] uppercase tracking-wider text-white/75 font-semibold mt-1">
+                        {item.label}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {startDate && (
+                <div className="text-xs sm:text-sm text-white/80">
+                  Jadwal dibuka:{" "}
+                  <span className="font-bold text-[#ffc107]">
+                    {formatDateIndo(startDate)} WIB
+                  </span>
+                </div>
+              )}
+
+              <div className="pt-1">
+                <Link
+                  to="/"
+                  className="inline-block bg-cyan-400 text-[#49318f] px-8 py-3.5 rounded-full font-bold text-sm hover:bg-cyan-300 transition-all duration-300 shadow-lg"
+                >
+                  Kembali ke Halaman Utama
+                </Link>
+              </div>
+            </div>
+
+            <div className="lg:col-span-5 flex justify-center lg:justify-end">
+              <img
+                src={Img1}
+                alt="Ilustrasi UnpakLink"
+                className="w-60 sm:w-76 lg:w-full max-w-sm drop-shadow-xl"
+              />
+            </div>
+
+            <div className="col-span-1 lg:col-span-12 pt-6 border-t border-white/15 mt-2 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-white/70">
+              <span>
+                © unpak.link — Bagian Perencanaan & Sistem Informasi (BPSI)
                 Universitas Pakuan
               </span>
-            </div>
-          </div>
-          <span className="px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-[#ffc107] text-[#362175]">
-            Segera Dibuka
-          </span>
-        </div>
-
-        <div className="p-8 sm:p-10 text-center space-y-6">
-          <div className="space-y-2">
-            <h1 className="text-xl sm:text-2xl font-extrabold text-gray-800">
-              Tautan Belum Dapat Diakses
-            </h1>
-            <p className="text-sm text-gray-500 leading-relaxed">
-              Tautan ini dijadwalkan untuk dibuka sesuai waktu hitung mundur di
-              bawah ini. Halaman akan dialihkan secara otomatis saat waktu
-              dimulai.
-            </p>
-          </div>
-
-          {/* Countdown Boxes */}
-          {timeLeft && (
-            <div className="grid grid-cols-4 gap-3">
-              {[
-                { label: "Hari", value: format(timeLeft.days) },
-                { label: "Jam", value: format(timeLeft.hours) },
-                { label: "Menit", value: format(timeLeft.minutes) },
-                { label: "Detik", value: format(timeLeft.seconds) },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="bg-[#49318f] text-white rounded-2xl py-4 px-2 shadow-md border-b-4 border-[#ffc107]"
-                >
-                  <div className="text-2xl sm:text-3xl font-black tracking-tight">
-                    {item.value}
-                  </div>
-                  <div className="text-[11px] uppercase tracking-wider text-purple-200 font-bold mt-1">
-                    {item.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Info Box */}
-          <div className="bg-[#49318f]/5 border border-[#49318f]/15 rounded-2xl p-4 space-y-2 text-left">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-[#49318f]/10 pb-2">
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                Tautan Pendek
-              </span>
-              <span className="text-sm sm:text-base font-extrabold text-[#49318f] break-all">
+              <span className="font-semibold text-white/90">
                 unpak.link/{shorturl ?? "---"}
               </span>
             </div>
-            {startDate && (
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                  Jadwal Dibuka
-                </span>
-                <span className="text-xs sm:text-sm font-bold text-gray-700">
-                  {formatDateIndo(startDate)} WIB
-                </span>
-              </div>
-            )}
           </div>
-
-          <div className="pt-2">
-            <Link
-              to="/"
-              className="inline-block w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm py-3.5 px-6 rounded-xl transition"
-            >
-              Kembali ke Beranda
-            </Link>
-          </div>
-        </div>
-
-        <div className="bg-gray-50 px-8 py-4 border-t border-gray-100 text-center text-xs text-gray-400 font-medium">
-          © unpak.link — Bagian Perencanaan & Sistem Informasi (BPSI)
-          Universitas Pakuan
         </div>
       </div>
     </div>

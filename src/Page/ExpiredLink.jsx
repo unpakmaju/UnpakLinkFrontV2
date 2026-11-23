@@ -1,71 +1,72 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import Logo from "@/assets/logo.svg";
+import Img2 from "@/assets/img-2.svg";
 
 export default function ExpiredLink() {
+  useEffect(() => {
+    document.title = "Tautan Kedaluwarsa — UnpakLink";
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#362175] via-[#49318f] to-[#6c53b4] flex flex-col items-center justify-center px-4 py-10 font-montserrat">
-      <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-white/20">
-        {/* Top Purple Banner */}
-        <div className="bg-[#49318f] px-8 py-6 flex items-center justify-between border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <img
-              src={Logo}
-              alt="Logo UNPAK"
-              className="w-10 h-10 object-contain bg-white/10 p-1.5 rounded-xl border border-white/15"
-            />
-            <div>
-              <span className="text-white font-extrabold text-lg tracking-wide block leading-none">
-                unpak.link
-              </span>
-              <span className="text-purple-200 text-[11px] font-medium">
+    <div className="min-h-screen bg-[#6c53b4] flex items-center py-10 sm:py-16 font-montserrat">
+      <div className="w-full max-w-6xl mx-auto px-6 sm:px-10 lg:px-14">
+        <div className="bg-[#49318f] rounded-3xl px-6 sm:px-12 lg:px-16 py-10 sm:py-14 text-white shadow-2xl">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            <div className="lg:col-span-7 text-center lg:text-left space-y-6">
+              <div className="inline-flex items-center gap-3">
+                <img
+                  src={Logo}
+                  alt="Logo UNPAK"
+                  className="w-14 sm:w-16 mx-auto lg:mx-0"
+                />
+                <div className="text-left">
+                  <span className="block text-xs uppercase tracking-widest text-[#ffc107] font-bold">
+                    Masa Aktif Berakhir
+                  </span>
+                  <span className="block text-sm text-white/80 font-light">
+                    Sivitas Akademika Universitas Pakuan
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight">
+                  Tautan Sudah Kedaluwarsa
+                </h1>
+                <p className="text-sm sm:text-base font-light text-white/85 leading-relaxed max-w-xl mx-auto lg:mx-0">
+                  Batas waktu akses untuk tautan pendek ini telah berakhir.
+                  Silakan hubungi pembuat tautan atau penyelenggara kegiatan
+                  apabila Anda masih memerlukan akses ke halaman tujuan.
+                </p>
+              </div>
+
+              <div className="pt-1">
+                <Link
+                  to="/"
+                  className="inline-block bg-cyan-400 text-[#49318f] px-8 py-3.5 rounded-full font-bold text-sm hover:bg-cyan-300 transition-all duration-300 shadow-lg"
+                >
+                  Kembali ke Halaman Utama
+                </Link>
+              </div>
+            </div>
+
+            <div className="lg:col-span-5 flex justify-center lg:justify-end">
+              <img
+                src={Img2}
+                alt="Ilustrasi UnpakLink"
+                className="w-60 sm:w-76 lg:w-full max-w-sm drop-shadow-xl"
+              />
+            </div>
+
+            <div className="col-span-1 lg:col-span-12 pt-6 border-t border-white/15 mt-2 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-white/70">
+              <span>
+                © unpak.link — Bagian Perencanaan & Sistem Informasi (BPSI)
                 Universitas Pakuan
               </span>
+              <span className="font-semibold text-white/90">unpak.link</span>
             </div>
           </div>
-          <span className="px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-rose-500 text-white">
-            Kedaluwarsa
-          </span>
-        </div>
-
-        {/* Main Content */}
-        <div className="p-8 sm:p-10 text-center space-y-6">
-          <div>
-            <span className="inline-block px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-wider bg-rose-50 text-rose-600 border border-rose-200">
-              Masa Aktif Tautan Telah Berakhir
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-800 mt-4">
-              Tautan Sudah Kedaluwarsa
-            </h1>
-            <div className="w-16 h-1.5 bg-[#ffc107] mx-auto rounded-full mt-3"></div>
-          </div>
-
-          <p className="text-sm text-gray-500 leading-relaxed">
-            Batas waktu akses untuk tautan pendek ini telah berakhir. Silakan
-            hubungi pembuat tautan atau penyelenggara kegiatan apabila Anda
-            masih memerlukan akses ke halaman ini.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-3 pt-2">
-            <Link
-              to="/"
-              className="flex-1 bg-[#49318f] hover:bg-[#382278] text-white font-bold text-sm py-3.5 px-6 rounded-xl transition shadow-md text-center"
-            >
-              Kembali ke Beranda
-            </Link>
-            <a
-              href="https://www.unpak.ac.id"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 border border-gray-200 hover:border-[#49318f]/40 hover:bg-gray-50 text-gray-700 font-bold text-sm py-3.5 px-6 rounded-xl transition text-center"
-            >
-              Portal UNPAK
-            </a>
-          </div>
-        </div>
-
-        <div className="bg-gray-50 px-8 py-4 border-t border-gray-100 text-center text-xs text-gray-400 font-medium">
-          © unpak.link — Bagian Perencanaan & Sistem Informasi (BPSI)
-          Universitas Pakuan
         </div>
       </div>
     </div>

@@ -81,6 +81,7 @@ export default function LinkPage() {
   }, []);
 
   useEffect(() => {
+    document.title = "Kelola & Buat Tautan — UnpakLink";
     loadData();
 
     const interval = setInterval(() => {
@@ -192,6 +193,7 @@ export default function LinkPage() {
   }
 
   useEffect(() => {
+    document.title = "Kelola & Buat Tautan — UnpakLink";
     loadData();
   }, [activeFilter]);
 
