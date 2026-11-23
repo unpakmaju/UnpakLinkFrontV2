@@ -7,15 +7,15 @@ import logoUnpakOnly from "@/assets/logo-unpak.webp";
 const STORAGE_KEY_PREFIX = "unpaklink_qr_design_";
 
 export const DEFAULT_QR_DESIGN = {
-  template: "pill-top-center",
+  template: "classic-center",
   color: "#49318f",
-  bodyShape: "rounded", // square | dots | rounded | classy
-  cornerStyle: "rounded", // square | rounded | circle
+  bodyShape: "square", // square | dots | rounded | classy
+  cornerStyle: "square", // square | rounded | circle
   logoType: "unpak-only", // unpak-only | unpak-simple | unpak-badge | none | custom
   customLogoDataUrl: "",
-  logoShape: "rounded", // rounded | circle | square
+  logoShape: "circle", // rounded | circle | square
   logoPosition: "center", // center | bottom-right | bottom-center | middle-right
-  frameStyle: "top-pill", // none | bottom-bar | top-bar | top-pill | bottom-pill | top-header | bottom-footer
+  frameStyle: "none", // none | bottom-bar | top-bar | top-pill | bottom-pill | top-header | bottom-footer
   frameText: "",
 };
 
@@ -797,7 +797,8 @@ const QR_TEMPLATES = [
     label: "Klasik Tengah",
     patch: {
       frameStyle: "none",
-      logoType: "unpak-badge",
+      logoType: "unpak-only",
+      logoShape: "circle",
       logoPosition: "center",
       bodyShape: "square",
       cornerStyle: "square",
