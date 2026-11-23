@@ -63,6 +63,16 @@ export function isValidDateTime(dateString) {
 export const isEmpty = (str) =>
   !str || str?.trim()?.length === 0 || str === undefined || str === null;
 
+export const isSafeHttpUrl = (rawUrl) => {
+  if (isEmpty(rawUrl) || typeof rawUrl !== "string") return false;
+  try {
+    const parsed = new URL(rawUrl.trim());
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+};
+
 export const isNumeric = (val) => {
   if (val === null || val === undefined) return false;
   if (typeof val === "number") return !Number.isNaN(val);

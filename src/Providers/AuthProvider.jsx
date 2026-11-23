@@ -8,8 +8,7 @@ const BASEAPI = import.meta.env.VITE_BASEAPI;
 
 const decodeJWT = (jwt) => {
   try {
-    const payload = jwt.split(".")[1];
-    return JSON.parse(atob(payload));
+    return jwtDecode(jwt);
   } catch {
     return null;
   }
@@ -78,7 +77,6 @@ export function AuthProvider({ children }) {
   const getLevelInfo = () => {
     const info = JSON.parse(localStorage.getItem("info") ?? "{}");
     const info2 = getDecodedToken(localStorage.getItem("idToken"));
-    console.log(info2?.group);
     if ((info2?.group ?? []).includes("adm_pusat")) {
       return "PUTIK LINK";
     } else if ((info2?.group ?? []).includes("Mahasiswa")) {

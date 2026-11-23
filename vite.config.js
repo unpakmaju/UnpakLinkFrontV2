@@ -7,17 +7,20 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   // base: "/asj_rbac/",
   server: {
-    host: true,
-    allowedHosts: ['*'],
+    host: "127.0.0.1",
+    allowedHosts: ["localhost", "127.0.0.1", "unpak.link"],
     proxy: {
-      '/realms': {
-        target: 'https://gerbang.unpak.ac.id',
+      "/realms": {
+        target: "https://gerbang.unpak.ac.id",
         changeOrigin: true,
-        secure: false,
+        secure: true,
       },
     },
   },
-  plugins: [react(), tailwindcss(),],
+  esbuild: {
+    drop: ["console", "debugger"],
+  },
+  plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
       "@assets": path.resolve(__dirname, "src/assets"),

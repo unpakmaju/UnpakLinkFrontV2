@@ -3,6 +3,7 @@ import { Eye, EyeOff, Lock } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { useToast } from "@/Providers/ToastProvider";
 import { useAuth } from "@/Providers/AuthProvider";
+import { isSafeHttpUrl } from "@/Common/Utils";
 import { getInformation } from "@/lib/utils";
 import countries from "i18n-iso-countries";
 import Logo from "@/assets/logo.svg";
@@ -85,15 +86,20 @@ export default function SmartLink() {
     setLoading(true);
 
     try {
+      const validToken = getValidToken();
+      const reqHeaders = {
+        "Content-Type": "application/json",
+        "X-API-KEY": "putiklink",
+      };
+      if (validToken) {
+        reqHeaders.Authorization = `Bearer ${validToken}`;
+      }
+
       const res = await fetch(
-        `${BASEAPI}/link/short/${shorturl}?`,
+        `${BASEAPI}/link/short/${encodeURIComponent(shorturl)}?`,
         {
           method: "GET",
-          headers: {
-            Authorization: `Bearer ${getValidToken()}`,
-            "Content-Type": "application/json",
-            "X-API-KEY": "putiklink",
-          },
+          headers: reqHeaders,
         },
       );
 
@@ -220,6 +226,11 @@ export default function SmartLink() {
 
     if (mode === "default" || (mode === "count" && status === "active")) {
       if (password) return;
+      if (!isSafeHttpUrl(long)) {
+        addToast("error", "URL tujuan tidak valid atau tidak aman");
+        setMode("notfound");
+        return;
+      }
       window.location.href = long;
     }
   }, [mode, status, long, password]);
@@ -229,7 +240,12 @@ export default function SmartLink() {
 
   function unlockHandler() {
     if (code === password) {
-      window.location.href = long ?? "https://unpak.ac.id";
+      const targetUrl = long ?? "https://unpak.ac.id";
+      if (!isSafeHttpUrl(targetUrl)) {
+        addToast("error", "URL tujuan tidak valid atau tidak aman");
+        return;
+      }
+      window.location.href = targetUrl;
     } else {
       addToast("error", "Password not match");
     }

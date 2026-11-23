@@ -30,7 +30,7 @@ import { QRCodeCanvas as QR } from "qrcode.react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/Providers/ToastProvider";
 import { useAuth } from "@/Providers/AuthProvider";
-import { isEmpty } from "@/Common/Utils";
+import { isEmpty, isSafeHttpUrl } from "@/Common/Utils";
 import axios from "axios";
 import { toPng } from "html-to-image";
 import { FiRotateCcw } from "react-icons/fi";
@@ -604,13 +604,14 @@ function ShortLinkForm({ renderAction = () => {} }) {
         const endAccess = findKeyVal(body, "EndAccess") || findKeyVal(body, "endaccess") || findKeyVal(body, "end_access");
 
         const formatAlertDate = (dateStr) => {
-          if (!dateStr) return "";
+          if (!dateStr) return null;
           try {
             const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return null;
             const pad = (n) => String(n).padStart(2, "0");
             return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
           } catch {
-            return dateStr;
+            return null;
           }
         };
 
@@ -708,14 +709,9 @@ function ShortLinkForm({ renderAction = () => {} }) {
               placeholder="https://yourdomain.id/very-long-links"
               {...register("longUrl", {
                 required: "URL is required",
-                validate: (value) => {
-                  try {
-                    new URL(value);
-                    return true;
-                  } catch {
-                    return "Invalid URL format";
-                  }
-                },
+                validate: (value) =>
+                  isSafeHttpUrl(value) ||
+                  "Invalid URL format (must start with http:// or https://)",
               })}
               className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-[#49318f]/20 focus:border-[#49318f] text-sm ${
                 errors.longUrl ? "border-red-500" : "border-gray-200"
