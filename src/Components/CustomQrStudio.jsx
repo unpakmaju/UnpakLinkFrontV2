@@ -82,28 +82,28 @@ function getLogoModuleBox(count, design, imgAspect = 1) {
     design.logoType === "unpak-badge" ||
     (design.logoType === "custom" && imgAspect > 1.35);
 
-  // Safe excavation size within 30% Reed-Solomon Level H capacity
+  // Larger, clearer logo size while remaining safe for Reed-Solomon Level H (30%)
   const boxW = isWide
-    ? Math.max(7, Math.round(count * 0.30))
-    : Math.max(5, Math.round(count * 0.21));
+    ? Math.max(10, Math.round(count * 0.36))
+    : Math.max(7, Math.round(count * 0.26));
   const boxH = isWide
-    ? Math.max(4, Math.round(count * 0.14))
-    : Math.max(5, Math.round(count * 0.21));
+    ? Math.max(5, Math.round(count * 0.17))
+    : Math.max(7, Math.round(count * 0.26));
 
   let startCol = Math.floor((count - boxW) / 2);
   let startRow = Math.floor((count - boxH) / 2);
 
   switch (design.logoPosition) {
     case "bottom-right":
-      startCol = count - boxW - 2;
-      startRow = count - boxH - 2;
+      startCol = count - boxW - 1;
+      startRow = count - boxH - 1;
       break;
     case "bottom-center":
       startCol = Math.floor((count - boxW) / 2);
-      startRow = count - boxH - 2;
+      startRow = count - boxH - 1;
       break;
     case "middle-right":
-      startCol = count - boxW - 2;
+      startCol = count - boxW - 1;
       startRow = Math.floor((count - boxH) / 2);
       break;
     case "center":
@@ -613,9 +613,11 @@ export const CustomQrRenderer = React.forwardRef(function CustomQrRenderer(
       const lw = logoBox.w * cellSize;
       const lh = logoBox.h * cellSize;
 
-      // White background plate with subtle border
+      // Background plate: use QR color (fgColor) for "unpak-simple" because its font is white!
+      const isDarkPlate = design.logoType === "unpak-simple";
       ctx.save();
-      ctx.fillStyle = "#ffffff";
+      ctx.fillStyle = isDarkPlate ? fgColor : "#ffffff";
+
       if (design.logoShape === "circle" && Math.abs(lw - lh) < cellSize * 2) {
         ctx.beginPath();
         ctx.arc(
@@ -627,32 +629,49 @@ export const CustomQrRenderer = React.forwardRef(function CustomQrRenderer(
         );
         ctx.fill();
       } else {
-        const rad = design.logoShape === "square" ? 2 : Math.min(lw, lh) * 0.22;
-        drawRoundedRectPath(ctx, lx, ly, lw, lh, rad);
+        const rad = design.logoShape === "square" ? 3 : Math.min(lw, lh) * 0.24;
+        const inset = isDarkPlate ? Math.max(1.5, cellSize * 0.25) : 0;
+        if (isDarkPlate) {
+          // Outer white separator so dark badge doesn't blend into surrounding QR modules
+          ctx.fillStyle = "#ffffff";
+          drawRoundedRectPath(ctx, lx, ly, lw, lh, rad);
+          ctx.fill();
+          ctx.fillStyle = fgColor;
+        }
+        drawRoundedRectPath(
+          ctx,
+          lx + inset,
+          ly + inset,
+          lw - inset * 2,
+          lh - inset * 2,
+          Math.max(2, rad - inset),
+        );
         ctx.fill();
       }
 
-      const innerPad = Math.max(2, cellSize * 0.45);
+      const innerPad = isDarkPlate
+        ? Math.max(3, cellSize * 0.55)
+        : Math.max(1.5, cellSize * 0.22);
       const availW = lw - innerPad * 2;
       const availH = lh - innerPad * 2;
 
       if (design.logoType === "unpak-badge" && loadedLogo) {
         // Draw UNPAK emblem on left + "unpak.link" text on right
-        const iconSize = Math.min(availH * 0.92, availW * 0.34);
-        const totalBadgeW = availW * 0.94;
+        const iconSize = Math.min(availH * 0.94, availW * 0.34);
+        const totalBadgeW = availW * 0.96;
         const startX = lx + (lw - totalBadgeW) / 2;
         const iconY = ly + (lh - iconSize) / 2;
 
         ctx.drawImage(loadedLogo, startX, iconY, iconSize, iconSize);
 
         ctx.fillStyle = fgColor;
-        const fontSize = Math.max(8, Math.round(availH * 0.42));
+        const fontSize = Math.max(9, Math.round(availH * 0.44));
         ctx.font = `800 ${fontSize}px Montserrat, system-ui, sans-serif`;
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
         ctx.fillText(
           "unpak.link",
-          startX + iconSize + Math.max(2, cellSize * 0.35),
+          startX + iconSize + Math.max(2, cellSize * 0.3),
           ly + lh / 2 + 0.5,
           totalBadgeW - iconSize - 2,
         );
@@ -781,10 +800,10 @@ const QR_TEMPLATES = [
   },
   {
     id: "pill-top-br",
-    label: "Modern S.id",
+    label: "Modern UNPAK",
     patch: {
       frameStyle: "top-pill",
-      logoType: "unpak-badge",
+      logoType: "unpak-only",
       logoPosition: "bottom-right",
       bodyShape: "rounded",
       cornerStyle: "circle",
