@@ -72,6 +72,55 @@ function isFinderPatternZone(row, col, count) {
   return false;
 }
 
+// Automatically trim transparent whitespace around any logo image so it renders full-size
+function trimTransparentImage(img) {
+  try {
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+    if (!w || !h) return img;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0, w, h);
+
+    const { data } = ctx.getImageData(0, 0, w, h);
+    let top = h,
+      left = w,
+      right = 0,
+      bottom = 0;
+
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const alpha = data[(y * w + x) * 4 + 3];
+        if (alpha > 15) {
+          if (x < left) left = x;
+          if (x > right) right = x;
+          if (y < top) top = y;
+          if (y > bottom) bottom = y;
+        }
+      }
+    }
+
+    if (right < left || bottom < top) return img;
+
+    const cropW = right - left + 1;
+    const cropH = bottom - top + 1;
+    const trimmed = document.createElement("canvas");
+    trimmed.width = cropW;
+    trimmed.height = cropH;
+    trimmed
+      .getContext("2d")
+      .drawImage(canvas, left, top, cropW, cropH, 0, 0, cropW, cropH);
+    trimmed.naturalWidth = cropW;
+    trimmed.naturalHeight = cropH;
+    return trimmed;
+  } catch {
+    return img;
+  }
+}
+
 // Calculate logo bounding box in module coordinates so we can excavate modules underneath
 function getLogoModuleBox(count, design, imgAspect = 1) {
   if (!design || design.logoType === "none") return null;
@@ -82,13 +131,13 @@ function getLogoModuleBox(count, design, imgAspect = 1) {
     design.logoType === "unpak-badge" ||
     (design.logoType === "custom" && imgAspect > 1.35);
 
-  // Larger, clearer logo size while remaining safe for Reed-Solomon Level H (30%)
+  // Prominent logo size utilizing Reed-Solomon Level H (30%) error correction
   const boxW = isWide
-    ? Math.max(10, Math.round(count * 0.36))
-    : Math.max(7, Math.round(count * 0.26));
+    ? Math.max(11, Math.round(count * 0.40))
+    : Math.max(8, Math.round(count * 0.30));
   const boxH = isWide
-    ? Math.max(5, Math.round(count * 0.17))
-    : Math.max(7, Math.round(count * 0.26));
+    ? Math.max(5, Math.round(count * 0.19))
+    : Math.max(8, Math.round(count * 0.30));
 
   let startCol = Math.floor((count - boxW) / 2);
   let startRow = Math.floor((count - boxH) / 2);
@@ -305,7 +354,7 @@ export const CustomQrRenderer = React.forwardRef(function CustomQrRenderer(
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
-      if (active) setLoadedLogo(img);
+      if (active) setLoadedLogo(trimTransparentImage(img));
     };
     img.onerror = () => {
       if (active) setLoadedLogo(null);
@@ -650,8 +699,8 @@ export const CustomQrRenderer = React.forwardRef(function CustomQrRenderer(
       }
 
       const innerPad = isDarkPlate
-        ? Math.max(3, cellSize * 0.55)
-        : Math.max(1.5, cellSize * 0.22);
+        ? Math.max(2.5, cellSize * 0.45)
+        : Math.max(1, cellSize * 0.12);
       const availW = lw - innerPad * 2;
       const availH = lh - innerPad * 2;
 
