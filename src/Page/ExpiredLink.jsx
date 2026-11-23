@@ -5,7 +5,7 @@ import Img2 from "@/assets/img-2.svg";
 
 export default function ExpiredLink() {
   useEffect(() => {
-    document.title = "Tautan Kedaluwarsa — UnpakLink";
+    document.title = "Tautan Kedaluwarsa";
   }, []);
 
   return (

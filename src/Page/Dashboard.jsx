@@ -176,7 +176,7 @@ export default function Dashboard() {
   // CLOSE DATE PICKER WHEN CLICK OUTSIDE
   // =======================
   useEffect(() => {
-    document.title = "Dashboard Analitik — UnpakLink";
+    document.title = "Dashboard Analitik";
   }, []);
 
   useEffect(() => {

@@ -5,7 +5,7 @@ import { useEffect } from "react";
 
 export default function Callback() {
   useEffect(() => {
-    document.title = "Autentikasi SSO — UnpakLink";
+    document.title = "Autentikasi SSO";
     keycloak.login({
       redirectUri: window.location.origin + "/callback_sso",
     });

@@ -139,29 +139,29 @@ export default function SmartLink() {
   useEffect(() => {
     const slugLabel = shorturl ? `unpak.link/${shorturl}` : "unpak.link";
     if (loading) {
-      document.title = `Memuat ${slugLabel}... — UnpakLink`;
+      document.title = `Memuat ${slugLabel}...`;
       return;
     }
     if (mode === "notfound") {
-      document.title = `404 Tautan Tidak Ditemukan (${slugLabel}) — UnpakLink`;
+      document.title = `404 Tautan Tidak Ditemukan (${slugLabel})`;
       return;
     }
     if (
       mode === "protect" ||
       (mode === "count" && status === "active" && password)
     ) {
-      document.title = `Tautan Terproteksi (${slugLabel}) — UnpakLink`;
+      document.title = `Tautan Terproteksi (${slugLabel})`;
       return;
     }
     if (mode === "count" && status === "expired") {
-      document.title = `Tautan Kedaluwarsa (${slugLabel}) — UnpakLink`;
+      document.title = `Tautan Kedaluwarsa (${slugLabel})`;
       return;
     }
     if (mode === "count" && status === "waiting") {
-      document.title = `Menunggu Waktu Akses (${slugLabel}) — UnpakLink`;
+      document.title = `Menunggu Waktu Akses (${slugLabel})`;
       return;
     }
-    document.title = `Mengalihkan ${slugLabel}... — UnpakLink`;
+    document.title = `Mengalihkan ${slugLabel}...`;
   }, [loading, mode, status, password, shorturl]);
 
   // ================= 5-SECOND AUTO REDIRECT ON 404 ======================

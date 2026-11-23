@@ -8,7 +8,7 @@ export default function NotFoundRoute() {
   const [countdown, setCountdown] = useState(5);
 
   useEffect(() => {
-    document.title = "404 Halaman Tidak Ditemukan — UnpakLink";
+    document.title = "404 Halaman Tidak Ditemukan";
   }, []);
 
   useEffect(() => {
