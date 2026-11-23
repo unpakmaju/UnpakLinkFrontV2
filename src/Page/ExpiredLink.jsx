@@ -1,54 +1,72 @@
+import { Link } from "react-router-dom";
+import Logo from "@/assets/logo.svg";
+
 export default function ExpiredLink() {
   return (
-    <div className="min-h-screen bg-[#0f2a33] flex items-center justify-center px-4">
-      <div className="text-center">
-        
-        {/* Illustration Wrapper */}
-        <div className="relative w-48 h-48 mx-auto mb-8">
-          
-          {/* Outer Ring */}
-          <div className="absolute inset-0 rounded-full border-4 border-red-500 animate-pulse"></div>
+    <div className="min-h-screen bg-gradient-to-br from-[#362175] via-[#49318f] to-[#6c53b4] flex flex-col items-center justify-center px-4 py-10 font-montserrat">
+      <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-white/20">
+        {/* Top Purple Banner */}
+        <div className="bg-[#49318f] px-8 py-6 flex items-center justify-between border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <img
+              src={Logo}
+              alt="Logo UNPAK"
+              className="w-10 h-10 object-contain bg-white/10 p-1.5 rounded-xl border border-white/15"
+            />
+            <div>
+              <span className="text-white font-extrabold text-lg tracking-wide block leading-none">
+                unpak.link
+              </span>
+              <span className="text-purple-200 text-[11px] font-medium">
+                Universitas Pakuan
+              </span>
+            </div>
+          </div>
+          <span className="px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-rose-500 text-white">
+            Kedaluwarsa
+          </span>
+        </div>
 
-          {/* Logo */}
-          <div
-            className="absolute inset-3 rounded-full shadow-xl 
-                       bg-[url('https://unpak.link/assets/logo.svg')] 
-                       bg-contain bg-center bg-no-repeat"
-          >
+        {/* Main Content */}
+        <div className="p-8 sm:p-10 text-center space-y-6">
+          <div>
+            <span className="inline-block px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-wider bg-rose-50 text-rose-600 border border-rose-200">
+              Masa Aktif Tautan Telah Berakhir
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-800 mt-4">
+              Tautan Sudah Kedaluwarsa
+            </h1>
+            <div className="w-16 h-1.5 bg-[#ffc107] mx-auto rounded-full mt-3"></div>
           </div>
 
-          {/* Expired Badge */}
-          <div className="absolute -bottom-2 -right-2 bg-red-600 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-md">
-            Time Expired
-          </div>
+          <p className="text-sm text-gray-500 leading-relaxed">
+            Batas waktu akses untuk tautan pendek ini telah berakhir. Silakan
+            hubungi pembuat tautan atau penyelenggara kegiatan apabila Anda
+            masih memerlukan akses ke halaman ini.
+          </p>
 
-          {/* Small Clock Icon */}
-          <div className="absolute top-3 left-1 bg-red-500 w-10 h-10 rounded-full flex items-center justify-center shadow-lg">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-5 h-5 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <Link
+              to="/"
+              className="flex-1 bg-[#49318f] hover:bg-[#382278] text-white font-bold text-sm py-3.5 px-6 rounded-xl transition shadow-md text-center"
             >
-              <circle cx="12" cy="12" r="9" />
-              <path d="M12 7v5l3 3" />
-            </svg>
+              Kembali ke Beranda
+            </Link>
+            <a
+              href="https://www.unpak.ac.id"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 border border-gray-200 hover:border-[#49318f]/40 hover:bg-gray-50 text-gray-700 font-bold text-sm py-3.5 px-6 rounded-xl transition text-center"
+            >
+              Portal UNPAK
+            </a>
           </div>
         </div>
 
-        {/* Text */}
-        <h1 className="text-white text-2xl font-semibold">
-          unpak.link{" "}
-          <span className="text-gray-300 font-normal">
-            | Link Expired
-          </span>
-        </h1>
-
-        <p className="text-gray-400 mt-3 text-sm">
-          The link you are trying to access has expired.
-        </p>
+        <div className="bg-gray-50 px-8 py-4 border-t border-gray-100 text-center text-xs text-gray-400 font-medium">
+          © unpak.link — Bagian Perencanaan & Sistem Informasi (BPSI)
+          Universitas Pakuan
+        </div>
       </div>
     </div>
   );

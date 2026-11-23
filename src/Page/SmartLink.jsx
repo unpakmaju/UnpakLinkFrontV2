@@ -1,55 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Eye, EyeOff, Lock } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
+import { useParams, Link } from "react-router-dom";
 import { useToast } from "@/Providers/ToastProvider";
 import { useAuth } from "@/Providers/AuthProvider";
 import { isSafeHttpUrl } from "@/Common/Utils";
-import { getInformation } from "@/lib/utils";
-import countries from "i18n-iso-countries";
 import Logo from "@/assets/logo.svg";
-import id from "i18n-iso-countries/langs/id.json";
-countries.registerLocale(id);
-
-// ================= LOADING DOTS ======================
-function LoadingDots() {
-  return (
-    <span className="inline-flex space-x-1 mt-2 text-green-400 italic text-xl font-semibold">
-      Loading link
-      <span className="animate-pulse">.</span>
-      <span className="animate-pulse animation-delay-200">.</span>
-      <span className="animate-pulse animation-delay-400">.</span>
-      <style jsx>{`
-        .animation-delay-200 {
-          animation-delay: 0.2s;
-        }
-        .animation-delay-400 {
-          animation-delay: 0.4s;
-        }
-      `}</style>
-    </span>
-  );
-}
 
 const BASEAPI = import.meta.env.VITE_BASEAPI;
-
-function LoadingDataDots() {
-  return (
-    <span className="inline-flex space-x-1 mt-2 text-green-400 italic text-xl font-semibold">
-      Loading
-      <span className="animate-pulse">.</span>
-      <span className="animate-pulse animation-delay-200">.</span>
-      <span className="animate-pulse animation-delay-400">.</span>
-      <style jsx>{`
-        .animation-delay-200 {
-          animation-delay: 0.2s;
-        }
-        .animation-delay-400 {
-          animation-delay: 0.4s;
-        }
-      `}</style>
-    </span>
-  );
-}
 
 export default function SmartLink() {
   const { shorturl } = useParams();
@@ -79,6 +36,7 @@ export default function SmartLink() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [code, setCode] = useState("");
+  const [unlocking, setUnlocking] = useState(false);
 
   // ================= LOAD DATA ======================
   async function loadData() {
@@ -114,9 +72,9 @@ export default function SmartLink() {
 
       if (!isMounted.current) return;
 
-      // 🔴 Backend status validation
       if (
         body.Status === "deleted" ||
+        body.Status === "delete" ||
         body.Status === "archive" ||
         body.Status == null
       ) {
@@ -136,7 +94,6 @@ export default function SmartLink() {
         setEndDate(end);
         setMode("count");
 
-        // gunakan timestamp absolute
         const now = Date.now();
         const startTime = start.getTime();
         const endTime = end.getTime();
@@ -189,10 +146,15 @@ export default function SmartLink() {
   useEffect(() => {
     if (mode !== "count") return;
 
-    const interval = setInterval(() => {
+    const updateTimer = () => {
       const newStatus = getStatus();
       setStatus((prevStatus) => {
-        if (prevStatus === "waiting" && newStatus === "active" && !long && !password) {
+        if (
+          prevStatus === "waiting" &&
+          newStatus === "active" &&
+          !long &&
+          !password
+        ) {
           loadData();
         }
         return newStatus;
@@ -220,10 +182,13 @@ export default function SmartLink() {
         minutes: Math.floor((diff / (1000 * 60)) % 60),
         seconds: Math.floor((diff / 1000) % 60),
       });
-    }, 1000);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
 
     return () => clearInterval(interval);
-  }, [mode, startDate, endDate]);
+  }, [mode, startDate, endDate, long, password]);
 
   // ================= REDIRECT ======================
   useEffect(() => {
@@ -240,17 +205,30 @@ export default function SmartLink() {
     }
   }, [mode, status, long, password]);
 
-  const format = (num) => String(num).padStart(2, "0");
+  const format = (num) => String(num ?? 0).padStart(2, "0");
   const isExpired = status === "expired";
 
-  async function unlockHandler() {
+  const formatDateIndo = (dateObj) => {
+    if (!dateObj || isNaN(dateObj.getTime())) return "-";
+    return dateObj.toLocaleDateString("id-ID", {
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  async function unlockHandler(e) {
+    if (e) e.preventDefault();
     if (!code || !code.trim()) {
-      addToast("error", "Password wajib diisi");
+      addToast("error", "Kode rahasia wajib diisi");
       return;
     }
 
-    // Jika backend menggunakan server-side password masking ("PROTECTED")
     if (password === "PROTECTED") {
+      setUnlocking(true);
       try {
         const validToken = getValidToken();
         const reqHeaders = {
@@ -270,7 +248,7 @@ export default function SmartLink() {
         );
 
         if (!res.ok) {
-          addToast("error", "Password not match");
+          addToast("error", "Kode rahasia tidak sesuai");
           return;
         }
 
@@ -283,7 +261,9 @@ export default function SmartLink() {
         window.location.href = targetUrl;
       } catch (err) {
         console.error(err);
-        addToast("error", "Gagal memverifikasi password");
+        addToast("error", "Gagal memverifikasi kode rahasia");
+      } finally {
+        setUnlocking(false);
       }
       return;
     }
@@ -296,186 +276,407 @@ export default function SmartLink() {
       }
       window.location.href = targetUrl;
     } else {
-      addToast("error", "Password not match");
+      addToast("error", "Kode rahasia tidak sesuai");
     }
   }
 
   if (loading) {
-    return null;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#362175] via-[#49318f] to-[#6c53b4] flex flex-col items-center justify-center p-6 font-montserrat text-white">
+        <div className="w-12 h-12 border-4 border-white/20 border-t-[#ffc107] rounded-full animate-spin mb-4"></div>
+        <p className="text-sm font-semibold tracking-wide text-purple-100">
+          Memeriksa tautan unpak.link/{shorturl}...
+        </p>
+      </div>
+    );
   }
 
   if (mode === "default" || (mode === "count" && status === "active")) {
-    if (password) {
-      // Biarkan jatuh ke bawah untuk merender form proteksi kata sandi
-    } else {
-      return null;
+    if (!password) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-[#362175] via-[#49318f] to-[#6c53b4] flex flex-col items-center justify-center p-6 font-montserrat text-white">
+          <div className="w-12 h-12 border-4 border-white/20 border-t-[#ffc107] rounded-full animate-spin mb-4"></div>
+          <p className="text-sm font-semibold tracking-wide text-purple-100">
+            Mengalihkan ke halaman tujuan...
+          </p>
+        </div>
+      );
     }
   }
 
-  // ================= NOT FOUND ======================
+  // ================= 1. NOT FOUND (404) ======================
   if (mode === "notfound") {
     return (
-      <div className="min-h-screen bg-[#1f1f1f] flex items-center justify-center px-6">
-        <div className="text-center">
-          <h1 className="text-[110px] md:text-[150px] font-extrabold text-gray-300 leading-none">
-            404
-          </h1>
-
-          <div className="relative flex justify-center mt-6 mb-8">
-            <div className="relative">
-              <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-48 h-8 bg-black/40 rounded-full blur-md"></div>
-              <div className="relative w-48 h-48 flex items-center justify-center">
-                <img
-                  src={Logo}
-                  alt="Logo"
-                  className="w-48 h-48 object-contain"
-                />
-                <div className="absolute top-10 left-14 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow">
-                  <div className="w-3 h-3 bg-black rounded-full"></div>
-                </div>
-                <div className="absolute top-10 right-14 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow">
-                  <div className="w-3 h-3 bg-black rounded-full"></div>
-                </div>
+      <div className="min-h-screen bg-gradient-to-br from-[#362175] via-[#49318f] to-[#6c53b4] flex flex-col items-center justify-center px-4 py-10 font-montserrat">
+        <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-white/20">
+          {/* Top Purple Banner */}
+          <div className="bg-[#49318f] px-8 py-6 flex items-center justify-between border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <img
+                src={Logo}
+                alt="Logo UNPAK"
+                className="w-10 h-10 object-contain bg-white/10 p-1.5 rounded-xl border border-white/15"
+              />
+              <div>
+                <span className="text-white font-extrabold text-lg tracking-wide block leading-none">
+                  unpak.link
+                </span>
+                <span className="text-purple-200 text-[11px] font-medium">
+                  Universitas Pakuan
+                </span>
               </div>
-              <span className="absolute -right-5 top-6 rotate-25 text-orange-400 text-5xl font-bold">
-                ?
-              </span>
             </div>
-          </div>
-
-          <p className="text-gray-400 text-base md:text-lg mb-5">
-            The link you’re want visit is not found on our universe
-          </p>
-
-          <div className="mt-6 text-gray-300 font-semibold text-lg">
-            unpak.link/{shorturl ?? "---"}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ================= PROTECT ======================
-  if (mode === "protect" || (mode === "count" && status === "active" && password)) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-sm p-8">
-          <div className="flex items-center gap-2 mb-10">
-            <img src={Logo} className="w-12 h-12" />
-            <span className="text-xl font-semibold text-gray-800">
-              unpak.link
+            <span className="px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-[#ffc107] text-[#362175]">
+              Error 404
             </span>
           </div>
 
-          <div className="text-center mb-6">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Lock className="w-5 h-5 text-gray-500" />
-              <span className="text-xl font-semibold text-gray-800">
-                <span className="text-red-500">unpak.link</span>/
-                {shorturl ?? "---"}
-              </span>
+          {/* Main Content */}
+          <div className="p-8 sm:p-10 text-center space-y-6">
+            <div>
+              <div className="text-7xl sm:text-8xl font-black text-[#49318f] tracking-tight leading-none select-none">
+                404
+              </div>
+              <div className="w-16 h-1.5 bg-[#ffc107] mx-auto rounded-full mt-4"></div>
             </div>
-            <p className="text-gray-600 text-sm">
-              Masukan Kode Rahasia untuk melanjutkan
-            </p>
+
+            <div className="space-y-2">
+              <h1 className="text-xl sm:text-2xl font-extrabold text-gray-800">
+                Tautan Tidak Tersedia
+              </h1>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                Tautan pendek yang Anda tuju tidak ditemukan, telah dihapus,
+                atau sedang dinonaktifkan. Pastikan penulisan huruf besar dan
+                kecil pada alamat tautan sudah sesuai.
+              </p>
+            </div>
+
+            {/* Requested Short URL Pill */}
+            <div className="bg-[#49318f]/5 border border-[#49318f]/15 rounded-2xl px-4 py-3.5">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                Alamat Tautan yang Diakses
+              </p>
+              <p className="text-base sm:text-lg font-extrabold text-[#49318f] break-all">
+                unpak.link/{shorturl ?? "---"}
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <Link
+                to="/"
+                className="flex-1 bg-[#49318f] hover:bg-[#382278] text-white font-bold text-sm py-3.5 px-6 rounded-xl transition shadow-md text-center"
+              >
+                Kembali ke Beranda
+              </Link>
+              <a
+                href="https://www.unpak.ac.id"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 border border-gray-200 hover:border-[#49318f]/40 hover:bg-gray-50 text-gray-700 font-bold text-sm py-3.5 px-6 rounded-xl transition text-center"
+              >
+                Portal UNPAK
+              </a>
+            </div>
           </div>
 
-          <div className="relative mb-4">
-            <input
-              type={showPassword ? "text" : "password"}
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="------"
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 pr-10 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-3 flex items-center text-gray-400"
-            >
-              {showPassword ? (
-                <EyeOff className="w-4 h-4" />
-              ) : (
-                <Eye className="w-4 h-4" />
-              )}
-            </button>
+          {/* Footer */}
+          <div className="bg-gray-50 px-8 py-4 border-t border-gray-100 text-center text-xs text-gray-400 font-medium">
+            © unpak.link — Bagian Perencanaan & Sistem Informasi (BPSI)
+            Universitas Pakuan
           </div>
-
-          <button
-            className="w-full bg-red-500 hover:bg-red-600 text-white font-medium py-3 rounded-lg transition duration-200"
-            onClick={unlockHandler}
-          >
-            Lanjutkan
-          </button>
         </div>
       </div>
     );
   }
 
-  // ================= DEFAULT & COUNT ======================
-  return (
-    <div className="min-h-screen bg-[#0f2a33] flex items-center justify-center px-4">
-      <div className="flex flex-col items-center text-center">
-        <div className="relative w-52 h-52 mb-8">
-          <div
-            className={`absolute inset-0 rounded-full border-4 transition duration-500 ${
-              isExpired
-                ? "border-red-500 animate-pulse"
-                : status === "active" || mode === "default"
-                  ? "border-green-400"
-                  : "border-orange-400"
-            }`}
-          ></div>
+  // ================= 2. PROTECTED LINK (PASSWORD) ======================
+  if (
+    mode === "protect" ||
+    (mode === "count" && status === "active" && password)
+  ) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#362175] via-[#49318f] to-[#6c53b4] flex flex-col items-center justify-center px-4 py-10 font-montserrat">
+        <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-white/20">
+          {/* Header */}
+          <div className="bg-[#49318f] px-8 py-6 flex items-center justify-between border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <img
+                src={Logo}
+                alt="Logo UNPAK"
+                className="w-10 h-10 object-contain bg-white/10 p-1.5 rounded-xl border border-white/15"
+              />
+              <div>
+                <span className="text-white font-extrabold text-lg tracking-wide block leading-none">
+                  unpak.link
+                </span>
+                <span className="text-purple-200 text-[11px] font-medium">
+                  Universitas Pakuan
+                </span>
+              </div>
+            </div>
+            <span className="px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-[#ffc107] text-[#362175]">
+              Terproteksi
+            </span>
+          </div>
 
-          <div
-            className={`absolute inset-3 rounded-full shadow-xl
-              bg-contain bg-center bg-no-repeat
-              transition duration-500
-              ${isExpired ? "grayscale opacity-60 scale-95" : ""}
-            `}
-            style={{
-              backgroundImage: `url(${Logo})`,
-            }}
-          ></div>
+          <form onSubmit={unlockHandler} className="p-8 space-y-6">
+            <div className="text-center space-y-2">
+              <h1 className="text-xl font-extrabold text-gray-800">
+                Tautan Dilindungi Kata Sandi
+              </h1>
+              <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
+                Masukkan kode rahasia untuk membuka dan melanjutkan ke halaman
+                tujuan.
+              </p>
+            </div>
+
+            <div className="bg-[#49318f]/5 border border-[#49318f]/15 rounded-2xl px-4 py-3 text-center">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">
+                Tujuan Tautan
+              </p>
+              <p className="text-base font-extrabold text-[#49318f] break-all">
+                unpak.link/{shorturl ?? "---"}
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                Kode Rahasia / Kata Sandi
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="Masukkan kata sandi..."
+                  autoFocus
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3.5 pr-11 focus:outline-none focus:ring-2 focus:ring-[#49318f]/20 focus:border-[#49318f] text-sm font-medium text-gray-800 transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-3.5 flex items-center text-gray-400 hover:text-[#49318f] transition cursor-pointer"
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={unlocking}
+              className="w-full bg-[#49318f] hover:bg-[#382278] disabled:bg-gray-300 text-white font-bold text-sm py-3.5 rounded-xl transition shadow-md cursor-pointer"
+            >
+              {unlocking ? "Memverifikasi..." : "Buka Tautan"}
+            </button>
+          </form>
+
+          <div className="bg-gray-50 px-8 py-4 border-t border-gray-100 text-center text-xs text-gray-400 font-medium">
+            © unpak.link — BPSI Universitas Pakuan
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ================= 3. EXPIRED LINK ======================
+  if (isExpired) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#362175] via-[#49318f] to-[#6c53b4] flex flex-col items-center justify-center px-4 py-10 font-montserrat">
+        <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-white/20">
+          {/* Top Purple Banner */}
+          <div className="bg-[#49318f] px-8 py-6 flex items-center justify-between border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <img
+                src={Logo}
+                alt="Logo UNPAK"
+                className="w-10 h-10 object-contain bg-white/10 p-1.5 rounded-xl border border-white/15"
+              />
+              <div>
+                <span className="text-white font-extrabold text-lg tracking-wide block leading-none">
+                  unpak.link
+                </span>
+                <span className="text-purple-200 text-[11px] font-medium">
+                  Universitas Pakuan
+                </span>
+              </div>
+            </div>
+            <span className="px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-rose-500 text-white">
+              Kedaluwarsa
+            </span>
+          </div>
+
+          {/* Main Content */}
+          <div className="p-8 sm:p-10 text-center space-y-6">
+            <div>
+              <span className="inline-block px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-wider bg-rose-50 text-rose-600 border border-rose-200">
+                Masa Aktif Tautan Telah Berakhir
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-800 mt-4">
+                Tautan Sudah Kedaluwarsa
+              </h1>
+              <div className="w-16 h-1.5 bg-[#ffc107] mx-auto rounded-full mt-3"></div>
+            </div>
+
+            <p className="text-sm text-gray-500 leading-relaxed">
+              Batas waktu akses untuk tautan pendek ini telah berakhir. Silakan
+              hubungi pembuat tautan atau penyelenggara kegiatan apabila Anda
+              masih memerlukan akses ke halaman ini.
+            </p>
+
+            {/* Shortlink & Schedule Details */}
+            <div className="bg-[#49318f]/5 border border-[#49318f]/15 rounded-2xl p-4 space-y-2.5 text-left">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-[#49318f]/10 pb-2.5">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                  Tautan Pendek
+                </span>
+                <span className="text-sm sm:text-base font-extrabold text-[#49318f] break-all">
+                  unpak.link/{shorturl ?? "---"}
+                </span>
+              </div>
+              {endDate && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                    Berakhir Pada
+                  </span>
+                  <span className="text-xs sm:text-sm font-bold text-rose-600">
+                    {formatDateIndo(endDate)} WIB
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <Link
+                to="/"
+                className="flex-1 bg-[#49318f] hover:bg-[#382278] text-white font-bold text-sm py-3.5 px-6 rounded-xl transition shadow-md text-center"
+              >
+                Kembali ke Beranda
+              </Link>
+              <a
+                href="https://www.unpak.ac.id"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 border border-gray-200 hover:border-[#49318f]/40 hover:bg-gray-50 text-gray-700 font-bold text-sm py-3.5 px-6 rounded-xl transition text-center"
+              >
+                Portal UNPAK
+              </a>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 px-8 py-4 border-t border-gray-100 text-center text-xs text-gray-400 font-medium">
+            © unpak.link — Bagian Perencanaan & Sistem Informasi (BPSI)
+            Universitas Pakuan
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ================= 4. WAITING / COUNTDOWN ======================
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#362175] via-[#49318f] to-[#6c53b4] flex flex-col items-center justify-center px-4 py-10 font-montserrat">
+      <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-white/20">
+        {/* Top Purple Banner */}
+        <div className="bg-[#49318f] px-8 py-6 flex items-center justify-between border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <img
+              src={Logo}
+              alt="Logo UNPAK"
+              className="w-10 h-10 object-contain bg-white/10 p-1.5 rounded-xl border border-white/15"
+            />
+            <div>
+              <span className="text-white font-extrabold text-lg tracking-wide block leading-none">
+                unpak.link
+              </span>
+              <span className="text-purple-200 text-[11px] font-medium">
+                Universitas Pakuan
+              </span>
+            </div>
+          </div>
+          <span className="px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-[#ffc107] text-[#362175]">
+            Segera Dibuka
+          </span>
         </div>
 
-        {mode === "count" && !isExpired && timeLeft && (
-          <div className="bg-white text-gray-800 rounded-2xl shadow-lg px-8 py-4 flex gap-8 mb-4">
-            {[
-              { label: "Days", value: format(timeLeft.days) },
-              { label: "Hours", value: format(timeLeft.hours) },
-              { label: "Minutes", value: format(timeLeft.minutes) },
-              { label: "Seconds", value: format(timeLeft.seconds) },
-            ].map((item, index) => (
-              <div key={index} className="flex flex-col items-center">
-                <span className="text-2xl font-bold">{item.value}</span>
-                <span className="text-xs text-gray-500">{item.label}</span>
+        <div className="p-8 sm:p-10 text-center space-y-6">
+          <div className="space-y-2">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-gray-800">
+              Tautan Belum Dapat Diakses
+            </h1>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              Tautan ini dijadwalkan untuk dibuka sesuai waktu hitung mundur di
+              bawah ini. Halaman akan dialihkan secara otomatis saat waktu
+              dimulai.
+            </p>
+          </div>
+
+          {/* Countdown Boxes */}
+          {timeLeft && (
+            <div className="grid grid-cols-4 gap-3">
+              {[
+                { label: "Hari", value: format(timeLeft.days) },
+                { label: "Jam", value: format(timeLeft.hours) },
+                { label: "Menit", value: format(timeLeft.minutes) },
+                { label: "Detik", value: format(timeLeft.seconds) },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="bg-[#49318f] text-white rounded-2xl py-4 px-2 shadow-md border-b-4 border-[#ffc107]"
+                >
+                  <div className="text-2xl sm:text-3xl font-black tracking-tight">
+                    {item.value}
+                  </div>
+                  <div className="text-[11px] uppercase tracking-wider text-purple-200 font-bold mt-1">
+                    {item.label}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Info Box */}
+          <div className="bg-[#49318f]/5 border border-[#49318f]/15 rounded-2xl p-4 space-y-2 text-left">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-[#49318f]/10 pb-2">
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                Tautan Pendek
+              </span>
+              <span className="text-sm sm:text-base font-extrabold text-[#49318f] break-all">
+                unpak.link/{shorturl ?? "---"}
+              </span>
+            </div>
+            {startDate && (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                  Jadwal Dibuka
+                </span>
+                <span className="text-xs sm:text-sm font-bold text-gray-700">
+                  {formatDateIndo(startDate)} WIB
+                </span>
               </div>
-            ))}
+            )}
           </div>
-        )}
 
-        {(mode === "default" || (mode === "count" && status === "active")) && (
-          <LoadingDots />
-        )}
-
-        {isExpired && (
-          <div className="mb-8 bg-red-600 text-white px-6 py-2 rounded-full shadow-md">
-            Expired
+          <div className="pt-2">
+            <Link
+              to="/"
+              className="inline-block w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm py-3.5 px-6 rounded-xl transition"
+            >
+              Kembali ke Beranda
+            </Link>
           </div>
-        )}
+        </div>
 
-        <h1 className="text-white text-2xl font-semibold mt-4">
-          <span className="text-gray-300">unpak.link/{shorturl ?? "---"}</span>
-        </h1>
-
-        <p className="text-gray-400 mt-3 text-sm max-w-md">
-          {status === "waiting" &&
-            "The event has not started yet. Countdown to start time."}
-          {(status === "active" || mode === "default") &&
-            "The link is now active. You will be redirected in 5 seconds."}
-          {isExpired && "This link has expired or is no longer available."}
-        </p>
+        <div className="bg-gray-50 px-8 py-4 border-t border-gray-100 text-center text-xs text-gray-400 font-medium">
+          © unpak.link — Bagian Perencanaan & Sistem Informasi (BPSI)
+          Universitas Pakuan
+        </div>
       </div>
     </div>
   );
