@@ -36,6 +36,10 @@ import { toPng } from "html-to-image";
 import { FiRotateCcw } from "react-icons/fi";
 import { useSidebar } from "@/Providers/SidebarProvider";
 import Swal from "sweetalert2";
+import CustomQrModal, {
+  CustomQrRenderer,
+  getSavedQrDesign,
+} from "@/Components/CustomQrStudio";
 
 const formatDateTime = (value) => {
   if (!value) return "";
@@ -1121,6 +1125,11 @@ function LinkCard({
   const [showDetail, setShowDetail] = useState(false);
   const [editAvailStatus, setEditAvailStatus] = useState("idle"); // idle | checking | available | unavailable | invalid
   const [editAvailMessage, setEditAvailMessage] = useState("");
+  const [qrDesign, setQrDesign] = useState(() => getSavedQrDesign(shortUrl));
+
+  useEffect(() => {
+    setQrDesign(getSavedQrDesign(shortUrl));
+  }, [shortUrl]);
 
   const { addToast } = useToast();
   const qrRef = useRef(null);
@@ -1913,20 +1922,14 @@ flex flex-col sm:flex-row gap-5 hover:shadow-lg hover:-translate-y-0.5 transitio
         <div
           onClick={() => setShowQR(true)}
           className="w-24 h-24 shrink-0 mx-auto sm:mx-0 
-  bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center shadow-inner cursor-pointer hover:bg-gray-100/70 hover:border-[#49318f]/30 hover:scale-105 active:scale-95 transition-all duration-200"
-          title="Klik untuk memperbesar QR Code"
+  bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center shadow-inner cursor-pointer hover:bg-gray-100/70 hover:border-[#49318f]/30 hover:scale-105 active:scale-95 transition-all duration-200 overflow-hidden"
+          title="Klik untuk kustomisasi & unduh QR Code"
         >
-          <QR
+          <CustomQrRenderer
             value={`${BASEURL}/${shortUrl}`}
-            size={80}
-            level="H"
-            includeMargin
-            imageSettings={{
-              src: logo_unpak,
-              height: 20,
-              width: 20,
-              excavate: true,
-            }}
+            shortUrl={shortUrl}
+            design={{ ...qrDesign, frameStyle: "none" }}
+            size={84}
           />
         </div>
 
@@ -2307,40 +2310,16 @@ flex flex-col sm:flex-row gap-5 hover:shadow-lg hover:-translate-y-0.5 transitio
         </Modal>
       )}
 
-      {/* ================= QR MODAL ================= */}
+      {/* ================= QR STUDIO MODAL ================= */}
       {showQR && (
-        <Modal title="QR Code Image" onClose={() => setShowQR(false)}>
-          <div className="text-center space-y-4">
-            <div className="w-48 h-48 mx-auto bg-gray-200 flex items-center justify-center rounded-xl">
-              <QR
-                ref={qrRef}
-                value={`${BASEURL}/${shortUrl}`}
-                size={220}
-                level="H"
-                includeMargin
-                imageSettings={{
-                  src: logo_unpak,
-                  x: undefined,
-                  y: undefined,
-                  height: 50,
-                  width: 50,
-                  excavate: true,
-                }}
-              />
-            </div>
-
-            <p className="text-sm text-gray-500">
-              {BASEURL}/{shortUrl}
-            </p>
-
-            <button
-              className="w-full py-2.5 bg-[#49318f] hover:bg-[#382278] active:bg-[#2d1b60] text-white rounded-xl font-bold transition shadow-sm cursor-pointer text-sm"
-              onClick={handleDownload}
-            >
-              Unduh Gambar QR
-            </button>
-          </div>
-        </Modal>
+        <CustomQrModal
+          shortUrl={shortUrl}
+          baseUrl={BASEURL || "https://unpak.link"}
+          initialDesign={qrDesign}
+          onClose={() => setShowQR(false)}
+          onSaveDesign={(newDesign) => setQrDesign(newDesign)}
+          addToast={addToast}
+        />
       )}
 
       {showDetail && (
