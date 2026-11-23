@@ -737,7 +737,7 @@ function ShortLinkForm({ renderAction = () => {} }) {
           Swal.fire({
             title: "Link Berhasil Dibuat!",
             html: `Link pendek Anda berhasil dibuat.<br/><br/>
-                   ⚠️ <b>Penting:</b> Secara default, link ini akan kedaluwarsa pada:<br/>
+                   <b>Penting:</b> Secara default, link ini akan kedaluwarsa pada:<br/>
                    <span style="color: #ea580c; font-weight: 700; font-size: 1.125rem;">${formattedDate || "7 hari mendatang"}</span>.<br/><br/>
                    Apakah Anda ingin membuat link ini menjadi <b>Permanen</b> (tanpa batas waktu)?`,
             icon: "success",
@@ -757,7 +757,7 @@ function ShortLinkForm({ renderAction = () => {} }) {
           Swal.fire({
             title: "Link Berhasil Dibuat!",
             html: `Link pendek Anda berhasil dibuat dengan masa aktif default.<br/><br/>
-                   ⚠️ <b>Penting:</b> Secara default, link ini memiliki batas waktu aktif agar database tidak penuh.`,
+                   <b>Penting:</b> Secara default, link ini memiliki batas waktu aktif agar database tidak penuh.`,
             icon: "success",
             confirmButtonColor: "#0891b2",
             confirmButtonText: "Selesai",

@@ -2,18 +2,8 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import {
   Calendar,
   ChevronDown,
-  MousePointerClick,
-  Users,
-  Link2,
-  TrendingUp,
   Search,
   ExternalLink,
-  CheckSquare,
-  RotateCcw,
-  Globe,
-  Monitor,
-  Clock,
-  BarChart3,
 } from "lucide-react";
 import { useAuth } from "@/Providers/AuthProvider";
 import { useToast } from "@/Providers/ToastProvider";
@@ -467,32 +457,22 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* ================= PAGE HEADER & DATE FILTER ================= */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-[#49318f]/10 text-[#49318f] flex items-center justify-center font-bold">
-              <BarChart3 size={22} />
-            </div>
-            <div>
-              <h1 className="text-2xl font-extrabold text-gray-800 tracking-tight">
-                Dashboard Analitik
-              </h1>
-              <p className="text-xs sm:text-sm text-gray-500">
-                Pantau detail performa setiap shortlink, tren kunjungan harian,
-                dan demografi pengunjung secara realtime.
-              </p>
-            </div>
-          </div>
+          <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Pantau statistik klik dan data pengunjung UnpakLink secara realtime.
+          </p>
         </div>
 
         {/* DATE FILTER */}
         <div
           ref={dateRef}
-          className="relative w-full md:w-auto md:min-w-[260px]"
+          className="relative w-full md:w-auto md:min-w-[240px]"
         >
           <button
             onClick={() => setShowDatePicker((prev) => !prev)}
-            className="bg-gray-50/80 border border-gray-200 rounded-xl px-4 py-2.5 flex items-center justify-between w-full hover:bg-white hover:border-[#49318f]/40 transition shadow-2xs cursor-pointer"
+            className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 flex items-center justify-between w-full hover:bg-gray-50 transition shadow-sm cursor-pointer"
           >
             <div className="flex items-center gap-2.5 text-gray-700 text-sm">
               <Calendar size={16} className="text-[#49318f]" />
@@ -638,73 +618,56 @@ export default function Dashboard() {
       {/* ================= 4 KPI SUMMARY CARDS ================= */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Total Klik */}
-        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex items-start justify-between">
-          <div>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-              Total Kunjungan (Klik)
-            </p>
-            <h3 className="text-3xl font-extrabold text-gray-800 mt-1.5">
-              {kpiMetrics.totalClicks.toLocaleString("id-ID")}
-            </h3>
-            <p className="text-xs text-emerald-600 font-semibold mt-2 flex items-center gap-1">
-              <TrendingUp size={13} />
-              Rata-rata ~{kpiMetrics.avgPerDay.toLocaleString("id-ID")} klik /
-              hari
-            </p>
-          </div>
-          <div className="w-11 h-11 rounded-2xl bg-[#49318f]/10 text-[#49318f] flex items-center justify-center shrink-0">
-            <MousePointerClick size={22} />
-          </div>
+        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+            Total Kunjungan (Klik)
+          </p>
+          <h3 className="text-3xl font-extrabold text-gray-800 mt-1.5">
+            {kpiMetrics.totalClicks.toLocaleString("id-ID")}
+          </h3>
+          <p className="text-xs text-gray-500 font-medium mt-2">
+            Rata-rata {kpiMetrics.avgPerDay.toLocaleString("id-ID")} klik / hari
+          </p>
         </div>
 
         {/* Card 2: Unique Visitors */}
-        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex items-start justify-between">
-          <div>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-              Pengunjung Unik (IP)
-            </p>
-            <h3 className="text-3xl font-extrabold text-gray-800 mt-1.5">
-              {kpiMetrics.uniqueIPs.toLocaleString("id-ID")}
-            </h3>
-            <p className="text-xs text-cyan-600 font-semibold mt-2">
-              {kpiMetrics.uniqueIPs > 0
-                ? `${(kpiMetrics.totalClicks / kpiMetrics.uniqueIPs).toFixed(1)}x rata-rata kunjungan/IP`
-                : "Belum ada pengunjung"}
-            </p>
-          </div>
-          <div className="w-11 h-11 rounded-2xl bg-cyan-500/10 text-cyan-600 flex items-center justify-center shrink-0">
-            <Users size={22} />
-          </div>
+        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+            Pengunjung Unik (IP)
+          </p>
+          <h3 className="text-3xl font-extrabold text-gray-800 mt-1.5">
+            {kpiMetrics.uniqueIPs.toLocaleString("id-ID")}
+          </h3>
+          <p className="text-xs text-gray-500 font-medium mt-2">
+            {kpiMetrics.uniqueIPs > 0
+              ? `${(kpiMetrics.totalClicks / kpiMetrics.uniqueIPs).toFixed(1)}x rata-rata kunjungan / IP`
+              : "Belum ada pengunjung"}
+          </p>
         </div>
 
         {/* Card 3: Total Link Aktif Terklik */}
-        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex items-start justify-between">
-          <div>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-              Link Memiliki Trafik
-            </p>
-            <h3 className="text-3xl font-extrabold text-gray-800 mt-1.5">
-              {kpiMetrics.activeLinksCount.toLocaleString("id-ID")}
-            </h3>
-            <p className="text-xs text-amber-600 font-semibold mt-2">
-              {selectedLinks.length > 0
-                ? `${selectedLinks.length} link sedang difilter`
-                : `Dari total ${linkList.length} link terdeteksi`}
-            </p>
-          </div>
-          <div className="w-11 h-11 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
-            <Link2 size={22} />
-          </div>
+        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+            Link Memiliki Trafik
+          </p>
+          <h3 className="text-3xl font-extrabold text-gray-800 mt-1.5">
+            {kpiMetrics.activeLinksCount.toLocaleString("id-ID")}
+          </h3>
+          <p className="text-xs text-gray-500 font-medium mt-2">
+            {selectedLinks.length > 0
+              ? `${selectedLinks.length} link sedang difilter`
+              : `Dari total ${linkList.length} link terdeteksi`}
+          </p>
         </div>
 
         {/* Card 4: Link Terpopuler (#1) */}
-        <div className="bg-gradient-to-br from-[#49318f] to-[#362175] text-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+        <div className="bg-[#49318f] text-white rounded-2xl p-5 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-purple-200">
-              🏆 Link Terpopuler (#1)
+              Link Terpopuler (#1)
             </span>
             {kpiMetrics.topLink && (
-              <span className="text-[11px] font-extrabold bg-white/15 px-2.5 py-0.5 rounded-full text-cyan-300">
+              <span className="text-[11px] font-bold bg-white/15 px-2.5 py-0.5 rounded-full text-white">
                 {kpiMetrics.topLink.share}% trafik
               </span>
             )}
@@ -765,7 +728,7 @@ export default function Dashboard() {
                     }`}
                   >
                     {showTopLines
-                      ? "✨ Garis Top 5 Link: Aktif"
+                      ? "Garis Top 5 Link: Aktif"
                       : "Tampilkan Garis Top 5 Link"}
                   </button>
                 )}
@@ -773,9 +736,8 @@ export default function Dashboard() {
                   <button
                     type="button"
                     onClick={() => setSelectedLinks([])}
-                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 transition flex items-center gap-1 cursor-pointer"
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 transition cursor-pointer"
                   >
-                    <RotateCcw size={12} />
                     Reset Filter ({selectedLinks.length})
                   </button>
                 )}
@@ -785,8 +747,7 @@ export default function Dashboard() {
             {datas.length === 0 && loading ? (
               <LocalLoader />
             ) : timelineData.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-[340px] text-gray-400 space-y-2">
-                <span className="text-4xl">📊</span>
+              <div className="flex flex-col items-center justify-center h-[340px] text-gray-400 space-y-1">
                 <p className="font-semibold text-gray-500">
                   Tidak ada data statistik pada rentang waktu ini
                 </p>
@@ -834,7 +795,22 @@ export default function Dashboard() {
                     allowDecimals={false}
                     tick={{ fontSize: 11, fill: "#64748b", fontWeight: 600 }}
                   />
+                  <Legend
+                    wrapperStyle={{ fontSize: 12, paddingTop: 12, zIndex: 0 }}
+                    formatter={(value) =>
+                      value === "Total Klik" ? (
+                        <span className="font-bold text-[#49318f]">
+                          Total Klik
+                        </span>
+                      ) : (
+                        <span className="font-medium text-gray-700">
+                          /{value}
+                        </span>
+                      )
+                    }
+                  />
                   <Tooltip
+                    wrapperStyle={{ zIndex: 9999, pointerEvents: "none" }}
                     content={({ active, label }) => {
                       if (!active || !label) return null;
                       const dayRow = timelineData.find((d) => d.date === label);
@@ -843,12 +819,12 @@ export default function Dashboard() {
                       const breakdownEntries = Object.entries(
                         dayRow._breakdown || {},
                       ).sort((a, b) => b[1] - a[1]);
-                      const topEntries = breakdownEntries.slice(0, 8);
+                      const topEntries = breakdownEntries.slice(0, 6);
                       const remainingCount =
                         breakdownEntries.length - topEntries.length;
 
                       return (
-                        <div className="bg-white/95 backdrop-blur-md p-4 border border-gray-200 rounded-2xl shadow-2xl text-xs space-y-2.5 min-w-[260px] max-w-[340px] z-50">
+                        <div className="bg-white p-4 border border-gray-200 rounded-2xl shadow-2xl text-xs space-y-2.5 min-w-[260px] max-w-[330px] relative z-[9999]">
                           {/* Tanggal & Ringkasan Hari Itu */}
                           <div className="border-b border-gray-100 pb-2">
                             <div className="font-extrabold text-gray-800 text-sm">
@@ -917,20 +893,6 @@ export default function Dashboard() {
                       );
                     }}
                   />
-                  <Legend
-                    wrapperStyle={{ fontSize: 12, paddingTop: 12 }}
-                    formatter={(value) =>
-                      value === "Total Klik" ? (
-                        <span className="font-bold text-[#49318f]">
-                          Total Klik
-                        </span>
-                      ) : (
-                        <span className="font-medium text-gray-700">
-                          /{value}
-                        </span>
-                      )
-                    }
-                  />
                   <Area
                     type="monotone"
                     dataKey="total"
@@ -968,7 +930,6 @@ export default function Dashboard() {
                     <span className="w-1.5 h-5 bg-[#06b6d4] rounded-full"></span>
                     Top Country
                   </h2>
-                  <Globe size={18} className="text-cyan-500" />
                 </div>
 
                 {/* Top Country Badges */}
@@ -992,8 +953,7 @@ export default function Dashboard() {
               {datas.length === 0 && loading ? (
                 <LocalLoader />
               ) : geoData.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-[320px] text-gray-400 space-y-2 border border-dashed border-gray-100 rounded-2xl">
-                  <span className="text-4xl">🌍</span>
+                <div className="flex flex-col items-center justify-center h-[320px] text-gray-400 space-y-1 border border-dashed border-gray-100 rounded-2xl">
                   <p className="font-semibold text-gray-500">
                     Tidak ada data lokasi
                   </p>
@@ -1011,7 +971,6 @@ export default function Dashboard() {
                     <span className="w-1.5 h-5 bg-[#ffc107] rounded-full"></span>
                     Browser Usage
                   </h2>
-                  <Monitor size={18} className="text-amber-500" />
                 </div>
 
                 {/* Browser Detail List */}
@@ -1043,8 +1002,7 @@ export default function Dashboard() {
               {datas.length === 0 && loading ? (
                 <LocalLoader />
               ) : browserData.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-[280px] text-gray-400 space-y-2 border border-dashed border-gray-100 rounded-2xl">
-                  <span className="text-4xl">🌐</span>
+                <div className="flex flex-col items-center justify-center h-[280px] text-gray-400 space-y-1 border border-dashed border-gray-100 rounded-2xl">
                   <p className="font-semibold text-gray-500">
                     Tidak ada data browser
                   </p>
@@ -1144,9 +1102,8 @@ export default function Dashboard() {
                 <button
                   type="button"
                   onClick={() => setSelectedLinks(linkList.slice(0, 5))}
-                  className="flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold bg-[#49318f]/10 text-[#49318f] hover:bg-[#49318f]/20 transition flex items-center justify-center gap-1 cursor-pointer"
+                  className="flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold bg-[#49318f]/10 text-[#49318f] hover:bg-[#49318f]/20 transition cursor-pointer"
                 >
-                  <CheckSquare size={13} />
                   Pilih Top 5 Link
                 </button>
                 <button
@@ -1373,10 +1330,7 @@ export default function Dashboard() {
                           </div>
                         </td>
                         <td className="py-3.5 px-4 text-right text-xs text-gray-500 font-medium">
-                          <div className="inline-flex items-center gap-1">
-                            <Clock size={12} className="text-gray-400" />
-                            <span>{formatDateTimeShort(item.lastVisit)}</span>
-                          </div>
+                          <span>{formatDateTimeShort(item.lastVisit)}</span>
                         </td>
                       </tr>
                     );
