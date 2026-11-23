@@ -7,11 +7,11 @@ import logoUnpakOnly from "@/assets/logo-unpak.webp";
 const STORAGE_KEY_PREFIX = "unpaklink_qr_design_";
 
 export const DEFAULT_QR_DESIGN = {
-  template: "pill-top-br",
+  template: "pill-top-center",
   color: "#49318f",
   bodyShape: "rounded", // square | dots | rounded | classy
   cornerStyle: "rounded", // square | rounded | circle
-  logoType: "unpak-badge", // unpak-simple | unpak-only | unpak-badge | none | custom
+  logoType: "unpak-only", // unpak-only | unpak-simple | unpak-badge | none | custom
   customLogoDataUrl: "",
   logoShape: "rounded", // rounded | circle | square
   logoPosition: "center", // center | bottom-right | bottom-center | middle-right
@@ -271,7 +271,7 @@ export const CustomQrRenderer = React.forwardRef(function CustomQrRenderer(
     const d = fgPath.getAttribute("d") || "";
     const grid = Array.from({ length: count }, () => Array(count).fill(false));
 
-    const regex = /M(\d+),(\d+)\s*h(\d+)v1/g;
+    const regex = /M(\d+)[,\s]+(\d+)\s*h(\d+)v1/g;
     let match;
     while ((match = regex.exec(d)) !== null) {
       const startX = parseInt(match[1], 10);
@@ -1304,7 +1304,49 @@ export default function CustomQrModal({
                   Pilihan Logo
                 </h3>
                 <div className="grid grid-cols-5 gap-2">
-                  {/* 1. Badge unpak.link */}
+                  {/* 1. Logo UNPAK (Logo Only - Default) */}
+                  <button
+                    type="button"
+                    onClick={() => updateDesign({ logoType: "unpak-only" })}
+                    title="Logo Resmi UNPAK (Lambang Saja)"
+                    className={`p-2 rounded-xl border flex flex-col items-center justify-center gap-1 transition cursor-pointer ${
+                      design.logoType === "unpak-only"
+                        ? "border-2 border-[#49318f] bg-[#49318f]/5"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <img
+                      src={logoUnpakOnly}
+                      alt="Logo UNPAK"
+                      className="w-6 h-6 object-contain"
+                    />
+                    <span className="text-[9px] font-bold text-gray-600">
+                      UNPAK
+                    </span>
+                  </button>
+
+                  {/* 2. Logo UNPAK + Nama (logo-unpak-simple.webp) */}
+                  <button
+                    type="button"
+                    onClick={() => updateDesign({ logoType: "unpak-simple" })}
+                    title="Logo UNPAK dengan Teks Nama"
+                    className={`p-2 rounded-xl border flex flex-col items-center justify-center gap-1 transition cursor-pointer ${
+                      design.logoType === "unpak-simple"
+                        ? "border-2 border-[#49318f] bg-[#49318f]/5"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <img
+                      src={logoUnpakSimple}
+                      alt="Logo UNPAK Teks"
+                      className="h-6 w-auto object-contain bg-[#49318f] p-0.5 rounded"
+                    />
+                    <span className="text-[9px] font-bold text-gray-600">
+                      UNPAK Teks
+                    </span>
+                  </button>
+
+                  {/* 3. Badge unpak.link */}
                   <button
                     type="button"
                     onClick={() => updateDesign({ logoType: "unpak-badge" })}
@@ -1327,48 +1369,6 @@ export default function CustomQrModal({
                     </div>
                     <span className="text-[9px] font-bold text-gray-600">
                       Badge
-                    </span>
-                  </button>
-
-                  {/* 2. Logo UNPAK 1 (Ada Nama - logo-unpak-simple.webp) */}
-                  <button
-                    type="button"
-                    onClick={() => updateDesign({ logoType: "unpak-simple" })}
-                    title="Logo UNPAK 1 (Dengan Nama UNPAK)"
-                    className={`p-2 rounded-xl border flex flex-col items-center justify-center gap-1 transition cursor-pointer ${
-                      design.logoType === "unpak-simple"
-                        ? "border-2 border-[#49318f] bg-[#49318f]/5"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <img
-                      src={logoUnpakSimple}
-                      alt="Logo UNPAK 1"
-                      className="h-6 w-auto object-contain bg-[#49318f] p-0.5 rounded"
-                    />
-                    <span className="text-[9px] font-bold text-gray-600">
-                      UNPAK 1
-                    </span>
-                  </button>
-
-                  {/* 3. Logo UNPAK 2 (Logo Only - logo-unpak.webp) */}
-                  <button
-                    type="button"
-                    onClick={() => updateDesign({ logoType: "unpak-only" })}
-                    title="Logo UNPAK 2 (Lambang Saja)"
-                    className={`p-2 rounded-xl border flex flex-col items-center justify-center gap-1 transition cursor-pointer ${
-                      design.logoType === "unpak-only"
-                        ? "border-2 border-[#49318f] bg-[#49318f]/5"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <img
-                      src={logoUnpakOnly}
-                      alt="Logo UNPAK 2"
-                      className="w-6 h-6 object-contain"
-                    />
-                    <span className="text-[9px] font-bold text-gray-600">
-                      UNPAK 2
                     </span>
                   </button>
 
