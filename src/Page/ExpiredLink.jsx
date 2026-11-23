@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import Logo from "@/assets/logo.svg";
+import Logo from "@/assets/logo-unpak.webp";
 import Img2 from "@/assets/img-2.svg";
 
 export default function ExpiredLink() {

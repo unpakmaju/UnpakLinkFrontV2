@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import Logo from "@/assets/logo.svg";
+import Logo from "@/assets/logo-unpak.webp";
 import Img1 from "@/assets/img-1.svg";
 import Img2 from "@/assets/img-2.svg";
 import { FaInstagram, FaFacebook, FaTiktok, FaYoutube } from "react-icons/fa";

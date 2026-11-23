@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import Logo from "@/assets/logo.svg";
+import Logo from "@/assets/logo-unpak.webp";
 import Img1 from "@/assets/img-1.svg";
 
 export default function NotFoundRoute() {

@@ -4,7 +4,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/Providers/ToastProvider";
 import { useAuth } from "@/Providers/AuthProvider";
 import { isSafeHttpUrl } from "@/Common/Utils";
-import Logo from "@/assets/logo.svg";
+import Logo from "@/assets/logo-unpak.webp";
 import Img1 from "@/assets/img-1.svg";
 import Img2 from "@/assets/img-2.svg";
 

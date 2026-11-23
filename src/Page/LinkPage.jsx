@@ -25,14 +25,11 @@ import {
   Share2,
 } from "lucide-react";
 
-import logo_unpak from "@/assets/logo.png";
-import { QRCodeCanvas as QR } from "qrcode.react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/Providers/ToastProvider";
 import { useAuth } from "@/Providers/AuthProvider";
 import { isEmpty, isSafeHttpUrl } from "@/Common/Utils";
 import axios from "axios";
-import { toPng } from "html-to-image";
 import { FiRotateCcw } from "react-icons/fi";
 import { useSidebar } from "@/Providers/SidebarProvider";
 import Swal from "sweetalert2";
