@@ -489,6 +489,8 @@ function ShortLinkForm({ renderAction = () => {} }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [availStatus, setAvailStatus] = useState("idle"); // idle | checking | available | unavailable | invalid
+  const [availMessage, setAvailMessage] = useState("");
 
   const {
     register,
@@ -511,6 +513,86 @@ function ShortLinkForm({ renderAction = () => {} }) {
   });
 
   const startValue = watch("start");
+  const shortUrlValue = watch("shorturl");
+
+  // 🔥 Live Availability Check untuk shorturl
+  useEffect(() => {
+    const raw = shortUrlValue ?? "";
+    const trimmed = raw.trim();
+
+    if (!trimmed) {
+      setAvailStatus("idle");
+      setAvailMessage("");
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9-]+$/.test(trimmed)) {
+      setAvailStatus("invalid");
+      setAvailMessage("Hanya huruf, angka, dan tanda hubung (-) yang diperbolehkan");
+      return;
+    }
+
+    const reserved = [
+      "dashboard",
+      "link",
+      "links",
+      "callback",
+      "callback_sso",
+      "api",
+      "assets",
+      "login",
+      "logout",
+      "swagger",
+    ];
+    if (reserved.includes(trimmed.toLowerCase())) {
+      setAvailStatus("unavailable");
+      setAvailMessage(`unpak.link/${trimmed} dicadangkan oleh sistem dan tidak dapat digunakan`);
+      return;
+    }
+
+    setAvailStatus("checking");
+    setAvailMessage(`Mengecek ketersediaan unpak.link/${trimmed}...`);
+
+    const abortCtrl = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `${BASEAPI}/link/check/${encodeURIComponent(trimmed)}`,
+          {
+            method: "GET",
+            signal: abortCtrl.signal,
+          },
+        );
+
+        if (!res.ok) {
+          setAvailStatus("unavailable");
+          setAvailMessage("Gagal memverifikasi ketersediaan link");
+          return;
+        }
+
+        const body = await res.json();
+        if (body?.available) {
+          setAvailStatus("available");
+          setAvailMessage(`unpak.link/${trimmed} tersedia dan siap digunakan!`);
+        } else {
+          setAvailStatus("unavailable");
+          setAvailMessage(
+            body?.message ||
+              `unpak.link/${trimmed} sudah digunakan oleh pengguna lain. Silakan pilih nama lain.`,
+          );
+        }
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          console.error("Availability check error:", err);
+        }
+      }
+    }, 350);
+
+    return () => {
+      clearTimeout(timer);
+      abortCtrl.abort();
+    };
+  }, [shortUrlValue]);
 
   // 🔥 Revalidate END setiap START berubah
   useEffect(() => {
@@ -522,6 +604,18 @@ function ShortLinkForm({ renderAction = () => {} }) {
   }, [startValue, trigger, clearErrors]);
 
   const onSave = async (data) => {
+    if (
+      availStatus === "checking" ||
+      availStatus === "unavailable" ||
+      availStatus === "invalid"
+    ) {
+      addToast(
+        "error",
+        availMessage || "Link pendek tidak tersedia atau sudah digunakan",
+      );
+      return;
+    }
+
     console.log("Submit form", data);
 
     setLoading(true);
@@ -579,6 +673,8 @@ function ShortLinkForm({ renderAction = () => {} }) {
           start: "",
           end: "",
         });
+        setAvailStatus("idle");
+        setAvailMessage("");
 
         console.log("Create Link API Success Response:", body);
 
@@ -727,19 +823,47 @@ function ShortLinkForm({ renderAction = () => {} }) {
           <div className="flex-shrink-0">
             <button
               type="submit"
-              disabled={loading}
-              className="flex items-center gap-2 bg-[#49318f] hover:bg-[#382278] active:bg-[#2d1b60] text-white px-6 py-3 rounded-xl font-bold transition disabled:bg-gray-300 w-full md:w-auto justify-center shadow-sm cursor-pointer"
+              disabled={
+                loading ||
+                availStatus === "checking" ||
+                availStatus === "unavailable" ||
+                availStatus === "invalid"
+              }
+              title={
+                availStatus === "unavailable"
+                  ? "Link pendek sudah digunakan oleh pengguna lain"
+                  : availStatus === "checking"
+                    ? "Sedang mengecek ketersediaan link..."
+                    : "Buat Shortlink"
+              }
+              className="flex items-center gap-2 bg-[#49318f] hover:bg-[#382278] active:bg-[#2d1b60] text-white px-6 py-3 rounded-xl font-bold transition-all duration-200 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed disabled:shadow-none w-full md:w-auto justify-center shadow-sm cursor-pointer"
             >
               <LinkIcon size={18} />
-              {loading ? "Loading..." : "Shorten it!"}
+              {loading
+                ? "Loading..."
+                : availStatus === "checking"
+                  ? "Mengecek..."
+                  : "Shorten it!"}
             </button>
           </div>
         </div>
 
         {/* shorturl */}
-        <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:gap-0 items-start sm:items-center">
-          <div className="flex w-full sm:flex-1 rounded-xl border border-gray-200 overflow-hidden focus-within:ring-2 focus-within:ring-[#49318f]/20 focus-within:border-[#49318f] transition-all">
-            <span className="px-4 py-3 bg-gray-50 text-gray-500 text-sm font-semibold select-none border-r">
+        <div className="mt-4 flex flex-col gap-1.5">
+          <div
+            className={`flex w-full rounded-xl border overflow-hidden transition-all duration-300 ${
+              availStatus === "available"
+                ? "border-emerald-500 ring-2 ring-emerald-500/15 bg-emerald-50/10"
+                : availStatus === "unavailable" ||
+                    availStatus === "invalid" ||
+                    errors.shorturl
+                  ? "border-rose-500 ring-2 ring-rose-500/15 bg-rose-50/10"
+                  : availStatus === "checking"
+                    ? "border-[#49318f] ring-2 ring-[#49318f]/15"
+                    : "border-gray-200 focus-within:ring-2 focus-within:ring-[#49318f]/20 focus-within:border-[#49318f]"
+            }`}
+          >
+            <span className="px-4 py-3 bg-gray-50 text-gray-500 text-sm font-semibold select-none border-r flex items-center">
               unpak.link/
             </span>
 
@@ -753,16 +877,61 @@ function ShortLinkForm({ renderAction = () => {} }) {
                   message: "Only letters, numbers, and dash allowed",
                 },
               })}
-              className={`flex-1 px-4 py-3 outline-none text-sm text-gray-700 bg-transparent ${
-                errors.shorturl ? "border-red-500" : ""
-              }`}
+              className="flex-1 px-4 py-3 outline-none text-sm text-gray-700 bg-transparent"
             />
+
+            {/* Status Indicator Badge Inside Input */}
+            {availStatus !== "idle" && (
+              <div className="px-3 flex items-center shrink-0">
+                {availStatus === "checking" && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#49318f]/10 text-[#49318f] animate-pulse">
+                    <span className="w-3.5 h-3.5 border-2 border-[#49318f]/30 border-t-[#49318f] rounded-full animate-spin"></span>
+                    <span className="hidden sm:inline">Mengecek...</span>
+                  </span>
+                )}
+                {availStatus === "available" && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200 transition-all duration-300 scale-100">
+                    <Check size={14} className="stroke-[2.5]" />
+                    <span className="hidden sm:inline">Tersedia</span>
+                  </span>
+                )}
+                {(availStatus === "unavailable" || availStatus === "invalid") && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700 border border-rose-200 transition-all duration-300">
+                    <X size={14} className="stroke-[2.5]" />
+                    <span className="hidden sm:inline">
+                      {availStatus === "invalid" ? "Format Salah" : "Tidak Tersedia"}
+                    </span>
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
-          {errors.shorturl && (
-            <p className="text-red-500 text-sm mt-1 sm:mt-0 sm:ml-2">
-              {errors.shorturl.message}
-            </p>
+          {/* Feedback Message Below Input */}
+          {availStatus !== "idle" ? (
+            <div
+              className={`flex items-center gap-1.5 text-xs font-semibold px-1 transition-all duration-300 ${
+                availStatus === "available"
+                  ? "text-emerald-600"
+                  : availStatus === "checking"
+                    ? "text-[#49318f]"
+                    : "text-rose-600"
+              }`}
+            >
+              {availStatus === "available" && (
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping shrink-0"></span>
+              )}
+              {(availStatus === "unavailable" || availStatus === "invalid") && (
+                <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
+              )}
+              <span>{availMessage}</span>
+            </div>
+          ) : (
+            errors.shorturl && (
+              <p className="text-rose-600 text-xs font-semibold px-1">
+                {errors.shorturl.message}
+              </p>
+            )
           )}
         </div>
 
@@ -948,6 +1117,8 @@ function LinkCard({
   const [showQR, setShowQR] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
+  const [editAvailStatus, setEditAvailStatus] = useState("idle"); // idle | checking | available | unavailable | invalid
+  const [editAvailMessage, setEditAvailMessage] = useState("");
 
   const { addToast } = useToast();
   const qrRef = useRef(null);
@@ -1002,7 +1173,108 @@ function LinkCard({
     });
   }, [password, start, end, shortUrl, reset]);
 
+  const editShortUrlValue = watch("shorturl");
+
+  useEffect(() => {
+    if (!showEdit) {
+      setEditAvailStatus("idle");
+      setEditAvailMessage("");
+      return;
+    }
+
+    const raw = editShortUrlValue ?? "";
+    const trimmed = raw.trim();
+
+    if (!trimmed) {
+      setEditAvailStatus("idle");
+      setEditAvailMessage("");
+      return;
+    }
+
+    if (trimmed === shortUrl) {
+      setEditAvailStatus("available");
+      setEditAvailMessage("Ini adalah link pendek Anda saat ini");
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9-]+$/.test(trimmed)) {
+      setEditAvailStatus("invalid");
+      setEditAvailMessage("Hanya huruf, angka, dan tanda hubung (-) yang diperbolehkan");
+      return;
+    }
+
+    const reserved = [
+      "dashboard",
+      "link",
+      "links",
+      "callback",
+      "callback_sso",
+      "api",
+      "assets",
+      "login",
+      "logout",
+      "swagger",
+    ];
+    if (reserved.includes(trimmed.toLowerCase())) {
+      setEditAvailStatus("unavailable");
+      setEditAvailMessage(`unpak.link/${trimmed} dicadangkan oleh sistem`);
+      return;
+    }
+
+    setEditAvailStatus("checking");
+    setEditAvailMessage(`Mengecek ketersediaan unpak.link/${trimmed}...`);
+
+    const abortCtrl = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `${BASEAPI}/link/check/${encodeURIComponent(trimmed)}?exclude_uuid=${encodeURIComponent(uuid)}`,
+          {
+            method: "GET",
+            signal: abortCtrl.signal,
+          },
+        );
+        if (!res.ok) {
+          setEditAvailStatus("unavailable");
+          setEditAvailMessage("Gagal memverifikasi ketersediaan link");
+          return;
+        }
+        const body = await res.json();
+        if (body?.available) {
+          setEditAvailStatus("available");
+          setEditAvailMessage(`unpak.link/${trimmed} tersedia dan siap digunakan!`);
+        } else {
+          setEditAvailStatus("unavailable");
+          setEditAvailMessage(
+            body?.message ||
+              `unpak.link/${trimmed} sudah digunakan oleh pengguna lain.`,
+          );
+        }
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          console.error(err);
+        }
+      }
+    }, 350);
+
+    return () => {
+      clearTimeout(timer);
+      abortCtrl.abort();
+    };
+  }, [editShortUrlValue, showEdit, shortUrl, uuid]);
+
   const onUpdate = async (data) => {
+    if (
+      editAvailStatus === "checking" ||
+      editAvailStatus === "unavailable" ||
+      editAvailStatus === "invalid"
+    ) {
+      addToast(
+        "error",
+        editAvailMessage || "Link pendek tidak tersedia atau sudah digunakan",
+      );
+      return;
+    }
     console.log("Submit form", data);
 
     setLoading(true);
@@ -1738,31 +2010,79 @@ flex flex-col sm:flex-row gap-5 hover:shadow-lg hover:-translate-y-0.5 transitio
       {showEdit && (
         <Modal title="Edit Link" onClose={() => setShowEdit(false)}>
           <form className="space-y-4" onSubmit={handleSubmit(onUpdate)}>
-            <div className="flex w-full sm:flex-1 rounded-xl border border-gray-200 overflow-hidden focus-within:ring-2 focus-within:ring-[#49318f]/20 focus-within:border-[#49318f] transition-all">
-              <span className="px-4 py-3 bg-gray-50 text-gray-500 text-sm font-semibold select-none border-r">
-                unpak.link/
-              </span>
-
-              <input
-                type="text"
-                placeholder="shorturl-kamu"
-                {...register("shorturl", {
-                  required: "Short link is required",
-                  pattern: {
-                    value: /^[a-zA-Z0-9-]+$/,
-                    message: "Only letters, numbers, and dash allowed",
-                  },
-                })}
-                className={`flex-1 px-4 py-3 outline-none text-sm text-gray-700 bg-transparent ${
-                  errors.shorturl ? "border-red-500" : ""
+            <div className="space-y-1.5">
+              <div
+                className={`flex w-full sm:flex-1 rounded-xl border overflow-hidden transition-all duration-300 ${
+                  editAvailStatus === "available"
+                    ? "border-emerald-500 ring-2 ring-emerald-500/15 bg-emerald-50/10"
+                    : editAvailStatus === "unavailable" ||
+                        editAvailStatus === "invalid" ||
+                        errors.shorturl
+                      ? "border-rose-500 ring-2 ring-rose-500/15 bg-rose-50/10"
+                      : editAvailStatus === "checking"
+                        ? "border-[#49318f] ring-2 ring-[#49318f]/15"
+                        : "border-gray-200 focus-within:ring-2 focus-within:ring-[#49318f]/20 focus-within:border-[#49318f]"
                 }`}
-              />
+              >
+                <span className="px-4 py-3 bg-gray-50 text-gray-500 text-sm font-semibold select-none border-r flex items-center">
+                  unpak.link/
+                </span>
+
+                <input
+                  type="text"
+                  placeholder="shorturl-kamu"
+                  {...register("shorturl", {
+                    required: "Short link is required",
+                    pattern: {
+                      value: /^[a-zA-Z0-9-]+$/,
+                      message: "Only letters, numbers, and dash allowed",
+                    },
+                  })}
+                  className="flex-1 px-4 py-3 outline-none text-sm text-gray-700 bg-transparent"
+                />
+
+                {editAvailStatus !== "idle" && (
+                  <div className="px-3 flex items-center shrink-0">
+                    {editAvailStatus === "checking" && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#49318f]/10 text-[#49318f] animate-pulse">
+                        <span className="w-3.5 h-3.5 border-2 border-[#49318f]/30 border-t-[#49318f] rounded-full animate-spin"></span>
+                      </span>
+                    )}
+                    {editAvailStatus === "available" && (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                        <Check size={13} className="stroke-[2.5]" />
+                      </span>
+                    )}
+                    {(editAvailStatus === "unavailable" ||
+                      editAvailStatus === "invalid") && (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700 border border-rose-200">
+                        <X size={13} className="stroke-[2.5]" />
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {editAvailStatus !== "idle" ? (
+                <div
+                  className={`flex items-center gap-1.5 text-xs font-semibold px-1 transition-all duration-300 ${
+                    editAvailStatus === "available"
+                      ? "text-emerald-600"
+                      : editAvailStatus === "checking"
+                        ? "text-[#49318f]"
+                        : "text-rose-600"
+                  }`}
+                >
+                  <span>{editAvailMessage}</span>
+                </div>
+              ) : (
+                errors.shorturl && (
+                  <p className="text-rose-600 text-xs font-semibold px-1">
+                    {errors.shorturl.message}
+                  </p>
+                )
+              )}
             </div>
-            {errors.shorturl && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.shorturl.message}
-              </p>
-            )}
             <div className="flex justify-end gap-3 pt-2">
               <button
                 type="button"
@@ -1771,8 +2091,16 @@ flex flex-col sm:flex-row gap-5 hover:shadow-lg hover:-translate-y-0.5 transitio
               >
                 Batal
               </button>
-              <button className="px-5 py-2 rounded-xl bg-[#49318f] hover:bg-[#382278] active:bg-[#2d1b60] text-white text-sm font-bold shadow-sm transition">
-                Simpan
+              <button
+                disabled={
+                  loading ||
+                  editAvailStatus === "checking" ||
+                  editAvailStatus === "unavailable" ||
+                  editAvailStatus === "invalid"
+                }
+                className="px-5 py-2 rounded-xl bg-[#49318f] hover:bg-[#382278] active:bg-[#2d1b60] text-white text-sm font-bold shadow-sm transition disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed disabled:shadow-none"
+              >
+                {editAvailStatus === "checking" ? "Mengecek..." : "Simpan"}
               </button>
             </div>
           </form>
