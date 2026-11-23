@@ -191,7 +191,12 @@ export default function SmartLink() {
 
     const interval = setInterval(() => {
       const newStatus = getStatus();
-      setStatus(newStatus);
+      setStatus((prevStatus) => {
+        if (prevStatus === "waiting" && newStatus === "active" && !long && !password) {
+          loadData();
+        }
+        return newStatus;
+      });
 
       if (newStatus === "expired") {
         setTimeLeft(null);
@@ -238,7 +243,51 @@ export default function SmartLink() {
   const format = (num) => String(num).padStart(2, "0");
   const isExpired = status === "expired";
 
-  function unlockHandler() {
+  async function unlockHandler() {
+    if (!code || !code.trim()) {
+      addToast("error", "Password wajib diisi");
+      return;
+    }
+
+    // Jika backend menggunakan server-side password masking ("PROTECTED")
+    if (password === "PROTECTED") {
+      try {
+        const validToken = getValidToken();
+        const reqHeaders = {
+          "Content-Type": "application/json",
+          "X-API-KEY": "putiklink",
+        };
+        if (validToken) {
+          reqHeaders.Authorization = `Bearer ${validToken}`;
+        }
+
+        const res = await fetch(
+          `${BASEAPI}/link/short/${encodeURIComponent(shorturl)}?code=${encodeURIComponent(code)}`,
+          {
+            method: "GET",
+            headers: reqHeaders,
+          },
+        );
+
+        if (!res.ok) {
+          addToast("error", "Password not match");
+          return;
+        }
+
+        const body = await res.json();
+        const targetUrl = body?.LongUrl ?? "https://unpak.ac.id";
+        if (!isSafeHttpUrl(targetUrl)) {
+          addToast("error", "URL tujuan tidak valid atau tidak aman");
+          return;
+        }
+        window.location.href = targetUrl;
+      } catch (err) {
+        console.error(err);
+        addToast("error", "Gagal memverifikasi password");
+      }
+      return;
+    }
+
     if (code === password) {
       const targetUrl = long ?? "https://unpak.ac.id";
       if (!isSafeHttpUrl(targetUrl)) {
